@@ -18,7 +18,7 @@
     <section id="screen-login" class="screen auth-screen active">
         <div class="auth-card">
             <div class="auth-logo">
-                <img class="brand-logo brand-logo-auth" src="imagens/cabide.png" alt="Logo Guarda Roupa Virtual" />
+                <img class="brand-logo brand-logo-auth" src="cabide.png" alt="Logo Guarda Roupa Virtual" />
                 <h1>Guarda Roupa <span>Virtual</span></h1>
                 <p>Compre, troque ou alugue de forma sustentável.</p>
             </div>
@@ -46,7 +46,7 @@
     <section id="screen-cadastro" class="screen auth-screen">
         <div class="auth-card">
             <div class="auth-logo">
-                <img class="brand-logo brand-logo-auth" src="imagens/cabide.png" alt="Logo Guarda Roupa Virtual" />
+                <img class="brand-logo brand-logo-auth" src="cabide.png" alt="Logo Guarda Roupa Virtual" />
                 <h1>Criar <span>conta</span></h1>
                 <p>Junte-se à moda consciente 🌱</p>
             </div>
@@ -117,8 +117,7 @@
                 <div class="hero-text">
                     <div class="hero-title">
                         <h1>Guarda Roupa <span>Virtual</span></h1>
-                        <img class="brand-logo brand-logo-home" src="imagens/cabide.png"
-                            alt="Logo Guarda Roupa Virtual" />
+                        <img class="brand-logo brand-logo-home" src="cabide.png" alt="Logo Guarda Roupa Virtual" />
                     </div>
                     <p>Compre, troque ou alugue de forma sustentável.</p>
                 </div>
@@ -392,6 +391,20 @@
         <!-- ============ TELA: PEDIDOS ============ -->
         <main id="screen-pedidos" class="screen app-screen">
             <h1 class="page-title">Meus pedidos</h1>
+            <div class="order-filters" role="group" aria-label="Filtrar pedidos">
+                <button class="order-filter active" data-action="filter-orders" data-filter="todos"
+                    type="button">Todos</button>
+                <button class="order-filter" data-action="filter-orders" data-filter="processando"
+                    type="button">Processando</button>
+                <button class="order-filter" data-action="filter-orders" data-filter="enviado"
+                    type="button">Enviado</button>
+                <button class="order-filter" data-action="filter-orders" data-filter="recebido"
+                    type="button">Recebido</button>
+                <button class="order-filter" data-action="filter-orders" data-filter="avaliar"
+                    type="button">Avaliar</button>
+                <button class="order-filter" data-action="filter-orders" data-filter="reembolso"
+                    type="button">Reembolso</button>
+            </div>
             <div id="orders-list"></div>
         </main>
 

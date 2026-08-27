@@ -46,6 +46,7 @@ const state = {
 
 const STORAGE_KEY = "guarda-roupa-virtual-state";
 const API_BASE_URL = "http://localhost:3000/api";
+let orderFilter = "todos";
 
 async function loadProductsFromApi() {
     try {
@@ -432,29 +433,44 @@ function renderOrders() {
     const orders = document.getElementById("orders-list");
     if (!orders) return;
 
-    const ordersToRender = state.orders.length ? state.orders : [
+    const allOrders = state.orders.length ? state.orders : [
         { id: "1042", name: "Camisa Social Preta", status: "em transporte", total: 59.99 },
         { id: "1038", name: "Calça Moletom Bench", status: "entregue", total: 89.90 }
     ];
-
-    orders.innerHTML = ordersToRender.map((order) => {
+    const ordersToRender = allOrders.filter((order) => {
         const stage = order.stage || (order.status === "entregue" ? 3 : 1);
-        const stages = ["Processando", "Enviado", "Recebido", "Avaliar"];
+        if (orderFilter === "todos") return true;
+        if (orderFilter === "processando") return stage === 0;
+        if (orderFilter === "enviado") return stage === 1;
+        if (orderFilter === "recebido") return stage === 2;
+        if (orderFilter === "avaliar") return stage >= 3;
+        if (orderFilter === "reembolso") return stage >= 2;
+        return true;
+    });
+
+    orders.innerHTML = ordersToRender.length ? ordersToRender.map((order) => {
+        const stage = order.stage || (order.status === "entregue" ? 3 : 1);
         return `
         <div class="card order-card">
             <h3>Pedido #${escapeHtml(order.id)}</h3>
             <p>${escapeHtml(order.name)} · Status: ${escapeHtml(order.status)}</p>
             <strong>${formatPrice(order.total)}</strong>
-            <div class="order-progress">${stages.map((name, index) => `<span class="${index <= stage ? "active" : ""}">${index + 1}. ${name}</span>`).join("")}</div>
             <div class="order-actions">
                 <button class="btn btn-outline btn-sm" data-action="track-order" data-id="${escapeHtml(order.id)}">Rastrear pedido</button>
-                ${stage >= 2 ? `<button class="btn btn-ghost btn-sm" data-action="refund-order" data-id="${escapeHtml(order.id)}">Solicitar reembolso</button>` : ""}
-                ${stage >= 3 ? `<button class="btn btn-primary btn-sm" data-action="rate-order" data-id="${escapeHtml(order.id)}">Avaliar</button>` : ""}
                 ${state.orders.includes(order) && stage < 3 ? `<button class="btn btn-outline btn-sm" data-action="advance-order" data-id="${escapeHtml(order.id)}">Avançar etapa</button>` : ""}
             </div>
         </div>
     `;
-    }).join("");
+    }).join("") : `<p class="empty-state">Nenhum pedido nesta categoria.</p>`;
+
+    document.querySelectorAll(".order-filter").forEach((button) => {
+        button.classList.toggle("active", button.dataset.filter === orderFilter);
+    });
+}
+
+function filterOrders(filter) {
+    orderFilter = filter;
+    renderOrders();
 }
 
 function renderProfile() {
@@ -1057,6 +1073,7 @@ function attachEvents() {
             const action = button.dataset.action;
             const id = button.dataset.id;
             const category = button.dataset.category;
+            const filter = button.dataset.filter;
 
             if (action === "add-cart") addToCart(id);
             if (action === "details") {
@@ -1069,6 +1086,7 @@ function attachEvents() {
             if (action === "filter-category") {
                 filterByCategory(category);
             }
+            if (action === "filter-orders") filterOrders(filter);
             if (["track-order", "refund-order", "rate-order"].includes(action)) {
                 handleOrderAction(action, id);
             }
