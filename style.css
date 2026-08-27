@@ -42,9 +42,9 @@ body {
 }
 
 .app-screen {
-    max-width: 1100px;
+    width: min(100%, 1600px);
     margin: 0 auto;
-    padding: 16px 16px 100px;
+    padding: 16px clamp(16px, 4vw, 64px) 100px;
     animation: fadeIn 0.25s ease;
 }
 
@@ -267,6 +267,25 @@ body {
     backdrop-filter: blur(10px);
 }
 
+.app-header-brand {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    border: none;
+    padding: 6px 10px;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 800;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.app-header-brand span {
+    color: var(--primary);
+}
+
 .header-left,
 .header-right {
     display: flex;
@@ -463,6 +482,13 @@ body {
     font-size: 3.2rem;
     background: #F1EEF9;
     position: relative;
+}
+
+.product-photo,
+.details-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .favorite-btn {
@@ -865,6 +891,39 @@ body {
     margin-top: 6px;
 }
 
+.checkout-address {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    background: var(--primary-light);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin: 14px 0;
+    font-size: 0.8rem;
+}
+
+.checkout-address span {
+    color: var(--text-muted);
+}
+
+.card-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 14px;
+    font-size: 0.82rem;
+    cursor: pointer;
+}
+
+.card-check input {
+    accent-color: var(--primary);
+}
+
+.card-fields {
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+}
+
 .coupon-row {
     display: flex;
     gap: 8px;
@@ -938,12 +997,36 @@ body {
 }
 
 .photo-upload {
+    position: relative;
     border: 2px dashed var(--lilac);
     border-radius: var(--radius);
     padding: 30px;
     text-align: center;
     cursor: pointer;
     color: var(--text-muted);
+}
+
+.photo-upload input[type="file"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.photo-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.photo-preview img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 10px;
 }
 
 .photo-upload i {
@@ -1006,6 +1089,22 @@ body {
     height: 80px;
     font-size: 2rem;
     margin: 0 auto 12px;
+}
+
+.profile-header .avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.profile-photo-control {
+    display: inline-block;
+    color: var(--primary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 10px;
 }
 
 .profile-rating {
@@ -1302,7 +1401,7 @@ body {
 /* ============ RESPONSIVO ============ */
 @media (min-width: 768px) {
     .products-grid {
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     }
 
     .categories {
@@ -1311,6 +1410,20 @@ body {
 
     .detail-gallery {
         height: 400px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .app-header {
+        padding-inline: clamp(24px, 4vw, 64px);
+    }
+
+    .hero-text h1 {
+        font-size: 2rem;
+    }
+
+    .hero-text p {
+        font-size: 0.95rem;
     }
 }
 
@@ -1329,4 +1442,30 @@ body {
         height: 60px;
         flex-basis: 60px;
     }
+
+    .app-header-brand {
+        font-size: 0.86rem;
+    }
+}
+
+.coupon-list {
+    display: grid;
+    gap: 12px;
+}
+
+.coupon-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.coupon-card span {
+    flex: 1;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.coupon-card strong {
+    color: var(--primary-dark);
 }

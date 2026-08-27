@@ -24,11 +24,11 @@
             </div>
             <form id="form-login" novalidate>
                 <div class="input-group">
-                    <label>E-mail</label>
+                    <label for="login-email">E-mail</label>
                     <input type="email" id="login-email" placeholder="seu@email.com" required />
                 </div>
                 <div class="input-group">
-                    <label>Senha</label>
+                    <label for="login-senha">Senha</label>
                     <input type="password" id="login-senha" placeholder="••••••••" required />
                 </div>
                 <div id="login-error" class="form-message error hidden"></div>
@@ -51,9 +51,11 @@
                 <p>Junte-se à moda consciente 🌱</p>
             </div>
             <form id="form-cadastro">
-                <div class="input-group"><label>Nome completo *</label><input type="text" id="cad-nome" required />
+                <div class="input-group"><label for="cad-nome">Nome completo *</label><input type="text" id="cad-nome"
+                        required />
                 </div>
-                <div class="input-group"><label>E-mail *</label><input type="email" id="cad-email" required /></div>
+                <div class="input-group"><label for="cad-email">E-mail *</label><input type="email" id="cad-email"
+                        required /></div>
                 <div class="input-row">
                     <div class="input-group"><label>Senha *</label><input type="password" id="cad-senha" minlength="6"
                             required /></div>
@@ -96,6 +98,8 @@
                 <button class="icon-btn" id="btn-menu"><i class="fa-solid fa-bars"></i></button>
                 <span class="greeting">Olá, <b id="user-firstname">Clayton</b>!</span>
             </div>
+            <button class="app-header-brand hidden" id="app-header-brand" onclick="showScreen('screen-home')"
+                aria-label="Voltar para a tela inicial">Guarda Roupa <span>Virtual</span></button>
             <div class="header-right">
                 <button class="icon-btn" onclick="showScreen('screen-favoritos')"><i
                         class="fa-regular fa-heart"></i></button>
@@ -240,6 +244,54 @@
         </main>
 
         <!-- ============ TELA: CHECKOUT ============ -->
+        <main id="screen-dados" class="screen app-screen">
+            <h1 class="page-title">Dados para entrega</h1>
+            <p class="page-intro">Complete seus dados antes de finalizar a compra.</p>
+            <form id="form-dados" class="card">
+                <div class="input-group"><label for="dados-nome">Nome completo *</label><input type="text"
+                        id="dados-nome" required /></div>
+                <div class="input-group"><label for="dados-cpf">CPF *</label><input type="text" id="dados-cpf"
+                        inputmode="numeric" placeholder="000.000.000-00" required /></div>
+                <div class="input-row">
+                    <div class="input-group"><label for="dados-telefone">Telefone *</label><input type="tel"
+                            id="dados-telefone" placeholder="(43) 99999-9999" required /></div>
+                    <div class="input-group"><label for="dados-cep">CEP *</label><input type="text" id="dados-cep"
+                            inputmode="numeric" placeholder="00000-000" required /></div>
+                </div>
+                <div class="input-row">
+                    <div class="input-group"><label for="dados-rua">Rua *</label><input type="text" id="dados-rua"
+                            required /></div>
+                    <div class="input-group"><label for="dados-numero">Número *</label><input type="text"
+                            id="dados-numero" required /></div>
+                </div>
+                <div class="input-row">
+                    <div class="input-group"><label for="dados-bairro">Bairro *</label><input type="text"
+                            id="dados-bairro" required /></div>
+                    <div class="input-group"><label for="dados-cidade">Cidade *</label><input type="text"
+                            id="dados-cidade" placeholder="Londrina" required /></div>
+                    <div class="input-group"><label for="dados-uf">UF *</label><input type="text" id="dados-uf"
+                            maxlength="2" placeholder="PR" required /></div>
+                </div>
+                <div class="input-group"><label for="dados-complemento">Complemento</label><input type="text"
+                        id="dados-complemento" placeholder="Apartamento, bloco etc." /></div>
+                <label class="card-check"><input type="checkbox" id="dados-cadastrar-cartao" /> Cadastrar cartão para
+                    compras futuras</label>
+                <div id="card-fields" class="card-fields hidden">
+                    <div class="input-group"><label for="dados-cartao-numero">Número do cartão</label><input type="text"
+                            id="dados-cartao-numero" inputmode="numeric" placeholder="0000 0000 0000 0000" /></div>
+                    <div class="input-row">
+                        <div class="input-group"><label for="dados-cartao-nome">Nome no cartão</label><input type="text"
+                                id="dados-cartao-nome" /></div>
+                        <div class="input-group"><label for="dados-cartao-validade">Validade</label><input type="text"
+                                id="dados-cartao-validade" placeholder="MM/AA" /></div>
+                        <div class="input-group"><label for="dados-cartao-cvv">CVV</label><input type="password"
+                                id="dados-cartao-cvv" inputmode="numeric" maxlength="4" /></div>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-full" type="submit">Continuar para pagamento</button>
+            </form>
+        </main>
+
         <main id="screen-checkout" class="screen app-screen">
             <h1 class="page-title">Checkout</h1>
             <div id="checkout-content"></div>
@@ -253,10 +305,12 @@
 
             <form id="form-publicar" class="publish-form">
                 <div class="card">
-                    <label class="card-label">Fotos do item *</label>
-                    <div class="photo-upload" onclick="this.classList.toggle('has-photo')">
+                    <label class="card-label" for="pub-fotos">Fotos do item *</label>
+                    <div class="photo-upload">
                         <i class="fa-solid fa-camera"></i>
                         <p>Adicionar fotos</p><small>Até 8 fotos</small>
+                        <input type="file" id="pub-fotos" accept="image/*" multiple />
+                        <div id="photo-preview" class="photo-preview"></div>
                     </div>
                 </div>
 
@@ -323,7 +377,7 @@
                     têxtil!</div>
 
                 <div class="btn-row">
-                    <button type="button" class="btn btn-outline">Salvar rascunho</button>
+                    <button type="button" class="btn btn-outline" id="save-draft">Salvar rascunho</button>
                     <button type="submit" class="btn btn-primary">Publicar item</button>
                 </div>
             </form>
@@ -345,6 +399,8 @@
         <main id="screen-perfil" class="screen app-screen">
             <div class="profile-header">
                 <div class="avatar" id="profile-avatar">C</div>
+                <label class="profile-photo-control" for="profile-photo">Alterar foto</label>
+                <input type="file" id="profile-photo" accept="image/*" hidden />
                 <h2 id="profile-name">Clayton</h2>
                 <p id="profile-city">Londrina, PR</p>
                 <div class="profile-rating">★ 4,9 · <span>Vendedor confiável</span></div>
@@ -358,24 +414,66 @@
                         class="fa-solid fa-chevron-right"></i></a>
                 <a onclick="showScreen('screen-suporte')"><i class="fa-solid fa-headset"></i> Suporte <i
                         class="fa-solid fa-chevron-right"></i></a>
+                <a onclick="showScreen('screen-dados')"><i class="fa-solid fa-pen"></i> Editar dados pessoais <i
+                        class="fa-solid fa-chevron-right"></i></a>
+                <a onclick="showScreen('screen-configuracoes')"><i class="fa-solid fa-gear"></i> Configurações <i
+                        class="fa-solid fa-chevron-right"></i></a>
+                <a onclick="showScreen('screen-cupons')"><i class="fa-solid fa-ticket"></i> Cupons e ofertas <i
+                        class="fa-solid fa-chevron-right"></i></a>
                 <a onclick="logout()" class="danger"><i class="fa-solid fa-right-from-bracket"></i> Sair da conta</a>
             </div>
+        </main>
+
+        <main id="screen-cupons" class="screen app-screen">
+            <h1 class="page-title">Cupons e ofertas</h1>
+            <div class="coupon-list">
+                <div class="card coupon-card"><strong>BEMVINDO10</strong><span>10% de desconto na compra</span><button
+                        class="btn btn-outline btn-sm" onclick="useCoupon('BEMVINDO10')">Usar cupom</button></div>
+                <div class="card coupon-card"><strong>MODACONSCIENTE</strong><span>R$ 15,00 de desconto</span><button
+                        class="btn btn-outline btn-sm" onclick="useCoupon('MODACONSCIENTE')">Usar cupom</button></div>
+            </div>
+        </main>
+
+        <main id="screen-configuracoes" class="screen app-screen">
+            <h1 class="page-title">Configurações</h1>
+            <form id="form-configuracoes" class="card">
+                <div class="input-group"><label for="setting-language">Idioma</label><select id="setting-language">
+                        <option value="pt-BR">Português (Brasil)</option>
+                        <option value="en-US">English</option>
+                        <option value="es">Español</option>
+                    </select></div>
+                <div class="input-group"><label for="setting-currency">Moeda de compra</label><select
+                        id="setting-currency">
+                        <option value="BRL">Real brasileiro (R$)</option>
+                        <option value="USD">Dólar americano ($)</option>
+                        <option value="EUR">Euro (€)</option>
+                    </select></div>
+                <div class="input-group"><label for="setting-payment">Forma de pagamento preferida</label><select
+                        id="setting-payment">
+                        <option>Pix</option>
+                        <option>Cartão</option>
+                        <option>Boleto</option>
+                    </select></div>
+                <label class="card-check"><input type="checkbox" id="setting-notifications" checked /> Receber
+                    notificações de pedidos</label>
+                <button class="btn btn-primary btn-full" type="submit">Salvar configurações</button>
+            </form>
         </main>
 
         <!-- ============ TELA: SUPORTE ============ -->
         <main id="screen-suporte" class="screen app-screen">
             <h1 class="page-title">Suporte</h1>
             <form id="form-suporte" class="card">
-                <div class="input-group"><label>Assunto</label>
-                    <select>
+                <div class="input-group"><label for="support-subject">Assunto</label>
+                    <select id="support-subject">
                         <option>Dúvida sobre pedido</option>
                         <option>Problema com troca</option>
                         <option>Pagamento</option>
                         <option>Outro</option>
                     </select>
                 </div>
-                <div class="input-group"><label>Mensagem</label><textarea rows="4" required
-                        placeholder="Descreva sua dúvida..."></textarea></div>
+                <div class="input-group"><label for="support-message">Mensagem</label><textarea id="support-message"
+                        rows="4" required placeholder="Descreva sua dúvida..."></textarea></div>
                 <button class="btn btn-primary btn-full"><i class="fa-regular fa-paper-plane"></i> Enviar
                     mensagem</button>
             </form>
