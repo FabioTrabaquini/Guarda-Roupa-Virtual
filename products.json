@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "nome": "Camisa Social Preta",
+    "categoria": "Camisetas",
+    "tamanho": "M",
+    "cor": "Preto",
+    "preco": 59.99,
+    "estado": "Excelente",
+    "emoji": "👔"
+  },
+  {
+    "id": 2,
+    "nome": "Calça Moletom Bench",
+    "categoria": "Calças",
+    "tamanho": "G",
+    "cor": "Preto",
+    "preco": 89.9,
+    "estado": "Excelente",
+    "emoji": "👖"
+  }
+]
