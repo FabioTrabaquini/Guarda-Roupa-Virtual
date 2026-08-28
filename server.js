@@ -109,11 +109,21 @@ const server = http.createServer(async (request, response) => {
             const product = {
                 id: Date.now(),
                 nome: String(data.nome).trim(),
+                marca: String(data.marca || "Sem marca").trim(),
                 categoria: String(data.categoria).trim(),
                 tamanho: String(data.tamanho || "").trim(),
                 cor: String(data.cor || "").trim(),
                 preco: Number(data.preco),
-                estado: String(data.estado || "Usado").trim()
+                aluguel: Number(data.aluguel || 0) || null,
+                troca: Boolean(data.troca),
+                local: String(data.local || "Nao informada").trim(),
+                vendedor: String(data.vendedor || "Visitante").trim(),
+                rating: Number(data.rating) || 5,
+                pop: Number(data.pop) || 0,
+                desc: String(data.desc || "").trim(),
+                image: String(data.image || ""),
+                estado: String(data.estado || "Usado").trim(),
+                emoji: String(data.emoji || "👕")
             };
 
             products.push(product);
@@ -121,6 +131,37 @@ const server = http.createServer(async (request, response) => {
             sendJson(response, 201, product);
         } catch (error) {
             sendJson(response, 400, { error: error.message });
+        }
+        return;
+    }
+
+    if (request.method === "GET") {
+        const requestedPath = decodeURIComponent(requestUrl.pathname === "/" ? "/index.html" : requestUrl.pathname);
+        const filePath = path.resolve(__dirname, `.${requestedPath}`);
+        const relativePath = path.relative(__dirname, filePath);
+        if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+            response.writeHead(403);
+            response.end("Acesso negado.");
+            return;
+        }
+
+        try {
+            const contentTypes = {
+                ".css": "text/css; charset=utf-8",
+                ".html": "text/html; charset=utf-8",
+                ".js": "text/javascript; charset=utf-8",
+                ".json": "application/json; charset=utf-8",
+                ".jpeg": "image/jpeg",
+                ".jpg": "image/jpeg",
+                ".png": "image/png",
+                ".webp": "image/webp"
+            };
+            const content = fs.readFileSync(filePath);
+            response.writeHead(200, { "Content-Type": contentTypes[path.extname(filePath).toLowerCase()] || "application/octet-stream" });
+            response.end(content);
+        } catch {
+            response.writeHead(404);
+            response.end("Arquivo nao encontrado.");
         }
         return;
     }

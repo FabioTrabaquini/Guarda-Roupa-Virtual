@@ -322,7 +322,7 @@ function getFilteredProducts() {
     const { search, categoria, tamanho, modalidade, estado, ordenar } = state.filters;
 
     let result = [...PRODUCTS].filter((product) => {
-        const matchesSearch = !search || product.nome.toLowerCase().includes(search.toLowerCase()) || product.desc.toLowerCase().includes(search.toLowerCase());
+        const matchesSearch = !search || product.nome.toLowerCase().includes(search.toLowerCase()) || String(product.desc || "").toLowerCase().includes(search.toLowerCase());
         const matchesCategoria = !categoria || product.categoria === categoria;
         const matchesTamanho = !tamanho || product.tamanho === tamanho;
         const matchesEstado = !estado || product.estado === estado;
@@ -438,7 +438,7 @@ function renderOrders() {
         { id: "1038", name: "Calça Moletom Bench", status: "entregue", total: 89.90 }
     ];
     const ordersToRender = allOrders.filter((order) => {
-        const stage = order.stage || (order.status === "entregue" ? 3 : 1);
+        const stage = order.stage ?? (order.status === "entregue" ? 3 : 1);
         if (orderFilter === "todos") return true;
         if (orderFilter === "processando") return stage === 0;
         if (orderFilter === "enviado") return stage === 1;
@@ -449,7 +449,7 @@ function renderOrders() {
     });
 
     orders.innerHTML = ordersToRender.length ? ordersToRender.map((order) => {
-        const stage = order.stage || (order.status === "entregue" ? 3 : 1);
+        const stage = order.stage ?? (order.status === "entregue" ? 3 : 1);
         return `
         <div class="card order-card">
             <h3>Pedido #${escapeHtml(order.id)}</h3>
@@ -812,6 +812,20 @@ function applyFilters() {
     saveState();
 }
 
+function searchFromHome(event) {
+    event.preventDefault();
+
+    const homeSearchInput = document.getElementById("home-search-input");
+    const catalogSearchInput = document.getElementById("search-input");
+    const search = homeSearchInput ? homeSearchInput.value.trim() : "";
+
+    if (catalogSearchInput) catalogSearchInput.value = search;
+    state.filters.search = search;
+    showScreen("screen-catalogo");
+    renderCatalog();
+    saveState();
+}
+
 function toggleFavorite(productId) {
     const id = Number(productId);
     const index = state.favorites.indexOf(id);
@@ -874,10 +888,11 @@ function finalizePurchase(event) {
         return;
     }
 
-    const total = state.cart.reduce((sum, entry) => {
+    const subtotal = state.cart.reduce((sum, entry) => {
         const product = getProductById(entry.id);
         return sum + (product ? product.preco * entry.qty : 0);
     }, 0);
+    const total = subtotal - getCouponDiscount(subtotal);
     state.orders.unshift({
         id: String(Date.now()).slice(-6),
         name: `${state.cart.length} item(ns)`,
@@ -1087,7 +1102,7 @@ function attachEvents() {
                 filterByCategory(category);
             }
             if (action === "filter-orders") filterOrders(filter);
-            if (["track-order", "refund-order", "rate-order"].includes(action)) {
+            if (["track-order", "advance-order", "refund-order", "rate-order"].includes(action)) {
                 handleOrderAction(action, id);
             }
         }
@@ -1123,6 +1138,7 @@ function attachEvents() {
     const formLogin = document.getElementById("form-login");
     const formCadastro = document.getElementById("form-cadastro");
     const formRecover = document.getElementById("form-recuperar");
+    const formHomeSearch = document.getElementById("home-search-form");
     const formPublicar = document.getElementById("form-publicar");
     const formPersonalData = document.getElementById("form-dados");
     const formSettings = document.getElementById("form-configuracoes");
@@ -1151,6 +1167,7 @@ function attachEvents() {
     if (formLogin) formLogin.addEventListener("submit", handleLogin);
     if (formCadastro) formCadastro.addEventListener("submit", handleCadastro);
     if (formRecover) formRecover.addEventListener("submit", handleRecover);
+    if (formHomeSearch) formHomeSearch.addEventListener("submit", searchFromHome);
     if (formPersonalData) formPersonalData.addEventListener("submit", handlePersonalData);
     if (formSettings) {
         fillSettingsForm();
