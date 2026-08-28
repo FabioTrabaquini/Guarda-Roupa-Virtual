@@ -30,6 +30,7 @@ const state = {
     publishedProducts: [],
     drafts: [],
     supportMessages: [],
+    notifications: [],
     pendingImages: [],
     appliedCoupon: null,
     settings: { language: "pt-BR", currency: "BRL", payment: "Pix", notifications: true },
@@ -90,6 +91,7 @@ function saveState() {
         publishedProducts: state.publishedProducts,
         drafts: state.drafts,
         supportMessages: state.supportMessages,
+        notifications: state.notifications,
         currentUser: state.currentUser,
         filters: state.filters,
         appliedCoupon: state.appliedCoupon,
@@ -133,8 +135,8 @@ function normalizeCategory(category) {
 
 function categoryLabel(category) {
     const labels = {
-        "en-US": { Camisetas: "T-shirts", "Calças": "Pants", Calçados: "Shoes", Casacos: "Coats", Vestidos: "Dresses" },
-        es: { Camisetas: "Camisetas", "Calças": "Pantalones", Calçados: "Calzado", Casacos: "Abrigos", Vestidos: "Vestidos" }
+        "en-US": { Camisetas: "T-shirts", "Calças": "Pants", Calçados: "Shoes", Casacos: "Coats", Vestidos: "Dresses", Outros: "Other" },
+        es: { Camisetas: "Camisetas", "Calças": "Pantalones", Calçados: "Calzado", Casacos: "Abrigos", Vestidos: "Vestidos", Outros: "Otros" }
     };
     return labels[state.settings.language]?.[normalizeCategory(category)] || normalizeCategory(category);
 }
@@ -219,6 +221,21 @@ function showToast(message) {
     showToast.timeoutId = setTimeout(() => toast.classList.remove("show"), 2200);
 }
 
+function showInfoDialog(title, message) {
+    const dialog = document.getElementById("info-dialog");
+    const titleElement = document.getElementById("info-dialog-title");
+    const messageElement = document.getElementById("info-dialog-message");
+    if (!dialog || !titleElement || !messageElement) return;
+
+    titleElement.textContent = title;
+    messageElement.textContent = message;
+    dialog.showModal();
+}
+
+function closeInfoDialog() {
+    document.getElementById("info-dialog")?.close();
+}
+
 function setLoginError(message) {
     const errorBox = document.getElementById("login-error");
     if (!errorBox) return;
@@ -239,6 +256,45 @@ function updateCartBadge() {
 
     const total = state.cart.reduce((sum, item) => sum + item.qty, 0);
     badge.textContent = String(total);
+    badge.classList.toggle("hidden", total < 1);
+}
+
+function updateFavoriteBadge() {
+    const badge = document.getElementById("favorite-count");
+    if (!badge) return;
+
+    const total = state.favorites.length;
+    badge.textContent = String(total);
+    badge.classList.toggle("hidden", total < 1);
+}
+
+function updateNotificationBadge() {
+    const badge = document.getElementById("notification-count");
+    if (!badge) return;
+
+    const unread = state.notifications.filter((notification) => !notification.read).length;
+    badge.textContent = String(unread);
+    badge.classList.toggle("hidden", unread < 1);
+}
+
+function renderNotifications() {
+    const container = document.getElementById("notifications-list");
+    if (!container) return;
+
+    const notifications = state.notifications;
+    container.innerHTML = notifications.length ? notifications.map((notification) => `
+        <div class="notification-item ${notification.read ? "" : "unread"}">
+            <strong>${escapeHtml(notification.title)}</strong>
+            <span>${escapeHtml(notification.message)}</span>
+        </div>
+    `).join("") : '<p class="empty-state">Nenhuma notificação nova.</p>';
+    updateNotificationBadge();
+}
+
+function addNotification(title, message) {
+    state.notifications.unshift({ title, message, read: false, createdAt: new Date().toISOString() });
+    saveState();
+    renderNotifications();
 }
 
 function formatPrice(value) {
@@ -389,6 +445,15 @@ function renderFavorites() {
     container.innerHTML = favorites.length ? favorites.map(buildProductCard).join("") : "<p class='empty-state'>Você ainda não marcou nenhum favorito.</p>";
 }
 
+function renderMyProducts() {
+    const container = document.getElementById("my-products");
+    if (!container) return;
+
+    container.innerHTML = state.publishedProducts.length
+        ? state.publishedProducts.map(buildProductCard).join("")
+        : "<p class='empty-state'>Você ainda não publicou nenhum produto.</p>";
+}
+
 function getCartSubtotal() {
     return state.cart.reduce((sum, entry) => {
         const product = getProductById(entry.id);
@@ -528,11 +593,17 @@ function renderCart() {
     const subtotal = getCartSubtotal();
     const discount = getCouponDiscount(subtotal);
     const total = subtotal - discount;
+    const couponOptions = Object.entries(COUPONS).map(([code, coupon]) =>
+        `<option value="${escapeHtml(code)}" ${state.appliedCoupon === code ? "selected" : ""}>${escapeHtml(code)} - ${escapeHtml(coupon.label)}</option>`
+    ).join("");
+    const couponPicker = couponOptions
+        ? `<select id="coupon-select" aria-label="Escolher cupom"><option value="">Escolher cupom disponível</option>${couponOptions}</select>`
+        : "";
 
     container.innerHTML = `
         ${items}
         <div class="summary-box card">
-            <div class="coupon-row"><input id="coupon-input" placeholder="Cupom de desconto" /><button type="button" class="btn btn-outline btn-sm" onclick="applyCoupon()">Aplicar</button></div>
+            <div class="coupon-row">${couponPicker}<input id="coupon-input" placeholder="Cupom de desconto" /><button type="button" class="btn btn-outline btn-sm" onclick="applyCoupon()">Aplicar</button></div>
             ${state.appliedCoupon ? `<div class="summary-row coupon-applied"><span>${escapeHtml(state.appliedCoupon)} <button type="button" onclick="removeCoupon()">Remover</button></span><strong>-${formatPrice(discount)}</strong></div>` : ""}
             <div class="summary-row"><span>Subtotal</span><strong>${formatPrice(subtotal)}</strong></div>
             <div class="summary-row"><span>Frete</span><strong>Grátis</strong></div>
@@ -540,6 +611,11 @@ function renderCart() {
             <button class="btn btn-primary btn-full" onclick="startCheckout()">Finalizar compra</button>
         </div>
     `;
+
+    document.getElementById("coupon-select")?.addEventListener("change", (event) => {
+        const input = document.getElementById("coupon-input");
+        if (input) input.value = event.target.value;
+    });
 }
 
 function renderCheckout() {
@@ -710,6 +786,15 @@ function renderDetails(productId) {
         return;
     }
 
+    const recommendedProducts = PRODUCTS
+        .filter((item) => item.id !== product.id)
+        .sort((first, second) => {
+            const firstMatch = first.categoria === product.categoria ? 1 : 0;
+            const secondMatch = second.categoria === product.categoria ? 1 : 0;
+            return secondMatch - firstMatch || Number(second.rating) - Number(first.rating);
+        })
+        .slice(0, 4);
+
     container.innerHTML = `
         <div class="details-card card">
             <div class="details-hero">${productVisual(product, "details-photo")}</div>
@@ -726,11 +811,117 @@ function renderDetails(productId) {
                 <span>Local: ${escapeHtml(product.local)}</span>
             </div>
             <div class="btn-row">
+                <button class="btn btn-outline" data-action="view-seller" data-id="${product.id}">Ver perfil do vendedor</button>
                 <button class="btn btn-outline" data-action="toggle-favorite" data-id="${product.id}">Favoritar</button>
                 <button class="btn btn-primary" data-action="add-cart" data-id="${product.id}">Adicionar ao carrinho</button>
             </div>
         </div>
+        <section class="recommendations">
+            <h2 class="page-title">Você também pode gostar</h2>
+            <div class="products-grid">${recommendedProducts.map(buildProductCard).join("")}</div>
+        </section>
     `;
+}
+
+function renderSellerProfile(productId) {
+    const container = document.getElementById("vendedor-content");
+    const product = getProductById(productId);
+    if (!container || !product) return;
+
+    const sellerProducts = PRODUCTS.filter((item) => item.vendedor === product.vendedor);
+    container.innerHTML = `
+        <button class="btn btn-outline seller-back" data-action="back-to-details" data-id="${product.id}">
+            <i class="fa-solid fa-arrow-left"></i> Voltar ao produto
+        </button>
+        <section class="seller-profile card">
+            <div class="seller-avatar">${escapeHtml(product.vendedor.charAt(0).toUpperCase())}</div>
+            <h1>${escapeHtml(product.vendedor)}</h1>
+            <p>${escapeHtml(product.local)}</p>
+            <div class="profile-rating">★ ${product.rating} · <span>Vendedor confiável</span></div>
+            <button class="btn btn-primary" data-action="open-chat" data-id="${product.id}">
+                <i class="fa-regular fa-comments"></i> Abrir chat
+            </button>
+        </section>
+        <section class="recommendations">
+            <h2 class="page-title">Produtos deste vendedor</h2>
+            <div class="products-grid">${sellerProducts.map(buildProductCard).join("")}</div>
+        </section>
+    `;
+}
+
+function renderChat(productId) {
+    const container = document.getElementById("chat-content");
+    const product = getProductById(productId);
+    if (!container || !product) return;
+
+    const messages = state.supportMessages.filter((item) => item.seller === product.vendedor);
+    container.innerHTML = `
+        <button class="btn btn-outline chat-back" data-action="back-to-seller" data-id="${product.id}">
+            <i class="fa-solid fa-arrow-left"></i> Voltar ao perfil
+        </button>
+        <section class="chat-window card">
+            <header class="chat-header">
+                <div class="seller-avatar">${escapeHtml(product.vendedor.charAt(0).toUpperCase())}</div>
+                <div>
+                    <h1>Chat com ${escapeHtml(product.vendedor)}</h1>
+                    <p>Sobre: ${escapeHtml(product.nome)}</p>
+                </div>
+            </header>
+            <div class="chat-messages">
+                ${messages.length ? messages.map((item) => `
+                    <div class="chat-bubble ${item.sender === "seller" ? "seller" : "buyer"}">
+                        <p>${escapeHtml(item.message)}</p>
+                        <small>${item.sender === "seller" ? "Vendedor" : "Você"}</small>
+                    </div>
+                `).join("") : '<p class="empty-state">Nenhuma mensagem ainda. Inicie a conversa.</p>'}
+            </div>
+            <form class="seller-message-form" data-seller="${escapeHtml(product.vendedor)}" data-product-id="${product.id}">
+                <div class="input-group">
+                    <label for="seller-message">Mensagem</label>
+                    <textarea id="seller-message" rows="3" required placeholder="Digite sua mensagem..."></textarea>
+                </div>
+                <button class="btn btn-primary" type="submit"><i class="fa-regular fa-paper-plane"></i> Enviar</button>
+            </form>
+        </section>
+    `;
+}
+
+function handleSellerMessage(event) {
+    event.preventDefault();
+    const form = event.target;
+    const message = form.querySelector("textarea")?.value.trim();
+    if (!message) return;
+
+    state.supportMessages.push({
+        subject: `Mensagem para ${form.dataset.seller}`,
+        message,
+        seller: form.dataset.seller,
+        productId: Number(form.dataset.productId),
+        createdAt: new Date().toISOString()
+    });
+    saveState();
+    form.reset();
+    renderChat(form.dataset.productId);
+    showToast("Mensagem enviada para o vendedor!");
+
+    window.setTimeout(() => {
+        const sellerReply = {
+            subject: `Resposta de ${form.dataset.seller}`,
+            message: "Oi! Recebi sua mensagem. Vou responder assim que possível.",
+            seller: form.dataset.seller,
+            productId: Number(form.dataset.productId),
+            sender: "seller",
+            createdAt: new Date().toISOString()
+        };
+        state.supportMessages.push(sellerReply);
+        addNotification(
+            `Nova mensagem de ${form.dataset.seller}`,
+            "O vendedor respondeu no chat."
+        );
+        if (document.getElementById("screen-chat")?.classList.contains("active")) {
+            renderChat(form.dataset.productId);
+        }
+    }, 1500);
 }
 
 function filterByCategory(category) {
@@ -739,7 +930,7 @@ function filterByCategory(category) {
     if (categoriaSelect) categoriaSelect.value = category;
     document.getElementById("side-menu")?.classList.add("hidden");
     document.getElementById("notification-panel")?.classList.add("hidden");
-    showScreen("screen-catalogo");
+    showScreen("screen-catalogo", { keepFilters: true });
     renderCatalog();
 }
 
@@ -764,7 +955,13 @@ function toggleNotifications() {
         menu.classList.add("hidden");
     }
 
+    const isOpening = panel.classList.contains("hidden");
     panel.classList.toggle("hidden");
+    if (isOpening) {
+        state.notifications.forEach((notification) => { notification.read = true; });
+        saveState();
+        renderNotifications();
+    }
 }
 
 function toggleFilters() {
@@ -821,7 +1018,7 @@ function searchFromHome(event) {
 
     if (catalogSearchInput) catalogSearchInput.value = search;
     state.filters.search = search;
-    showScreen("screen-catalogo");
+    showScreen("screen-catalogo", { keepFilters: true });
     renderCatalog();
     saveState();
 }
@@ -842,6 +1039,7 @@ function toggleFavorite(productId) {
     renderCatalog();
     renderFavorites();
     renderDetails(id);
+    updateFavoriteBadge();
     saveState();
 }
 
@@ -1025,6 +1223,15 @@ function logout() {
     showScreen("screen-login");
 }
 
+function resetPublishForm() {
+    const form = document.getElementById("form-publicar");
+    const preview = document.getElementById("photo-preview");
+
+    form?.reset();
+    if (preview) preview.innerHTML = "";
+    state.pendingImages = [];
+}
+
 function showScreen(screenId, options = {}) {
     if (screenId === "screen-checkout" && (!state.cart.length || !hasDeliveryData())) {
         startCheckout();
@@ -1034,8 +1241,10 @@ function showScreen(screenId, options = {}) {
     document.getElementById("side-menu")?.classList.add("hidden");
     document.getElementById("notification-panel")?.classList.add("hidden");
 
+    if (screenId === "screen-catalogo" && !options.keepFilters) clearFilters();
     document.getElementById("app-header-brand")?.classList.toggle("hidden", screenId === "screen-home");
     if (screenId === "screen-dados") fillPersonalDataForm();
+    if (screenId === "screen-publicar") resetPublishForm();
 
     if (!options.fromHistory && window.location.hash !== `#${screenId}`) {
         const method = options.replace ? "replaceState" : "pushState";
@@ -1053,11 +1262,14 @@ function showScreen(screenId, options = {}) {
         "screen-home",
         "screen-catalogo",
         "screen-detalhes",
+        "screen-vendedor",
+        "screen-chat",
         "screen-dados",
         "screen-carrinho",
         "screen-checkout",
         "screen-publicar",
         "screen-favoritos",
+        "screen-meus-produtos",
         "screen-pedidos",
         "screen-perfil",
         "screen-suporte"
@@ -1082,6 +1294,10 @@ function showScreen(screenId, options = {}) {
 }
 
 function attachEvents() {
+    document.addEventListener("submit", (event) => {
+        if (event.target.matches(".seller-message-form")) handleSellerMessage(event);
+    });
+
     document.addEventListener("click", (event) => {
         const button = event.target.closest("[data-action]");
         if (button) {
@@ -1094,6 +1310,22 @@ function attachEvents() {
             if (action === "details") {
                 showScreen("screen-detalhes");
                 renderDetails(id);
+            }
+            if (action === "view-seller") {
+                showScreen("screen-vendedor");
+                renderSellerProfile(id);
+            }
+            if (action === "back-to-details") {
+                showScreen("screen-detalhes");
+                renderDetails(id);
+            }
+            if (action === "open-chat") {
+                showScreen("screen-chat");
+                renderChat(id);
+            }
+            if (action === "back-to-seller") {
+                showScreen("screen-vendedor");
+                renderSellerProfile(id);
             }
             if (action === "toggle-favorite") toggleFavorite(id);
             if (action === "increase-qty") changeQty(id, "increase");
@@ -1236,7 +1468,8 @@ function attachEvents() {
             event.preventDefault();
             const name = document.getElementById("pub-nome")?.value.trim();
             const description = document.getElementById("pub-desc")?.value.trim();
-            const price = Number(document.getElementById("pub-preco")?.value || 0);
+            const priceValue = document.getElementById("pub-preco")?.value || "";
+            const price = Number(priceValue.replace(",", "."));
             if (!name || !description || price <= 0) {
                 showToast("Preencha nome, descrição e um preço válido.");
                 return;
@@ -1267,9 +1500,8 @@ function attachEvents() {
             saveState();
             renderHome();
             renderCatalog();
+            renderMyProducts();
             showToast("Item publicado com sucesso!");
-            state.pendingImages = [];
-            formPublicar.reset();
             showScreen("screen-home");
         });
     }
@@ -1288,13 +1520,16 @@ document.addEventListener("DOMContentLoaded", () => {
     applyTranslations();
 
     updateCartBadge();
+    updateFavoriteBadge();
     renderHome();
     renderCatalog();
     renderFavorites();
+    renderMyProducts();
     renderCart();
     renderCheckout();
     renderOrders();
     renderProfile();
+    renderNotifications();
     attachEvents();
     showScreen(window.location.hash.slice(1) || "screen-login", { replace: true });
     loadProductsFromApi();

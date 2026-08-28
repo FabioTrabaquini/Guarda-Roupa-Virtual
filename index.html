@@ -101,13 +101,15 @@
             <button class="app-header-brand hidden" id="app-header-brand" onclick="showScreen('screen-home')"
                 aria-label="Voltar para a tela inicial">Guarda Roupa <span>Virtual</span></button>
             <div class="header-right">
-                <button class="icon-btn" onclick="showScreen('screen-favoritos')"><i
-                        class="fa-regular fa-heart"></i></button>
-                <button class="icon-btn badge-btn" onclick="showScreen('screen-carrinho')">
-                    <i class="fa-solid fa-cart-shopping"></i><span class="badge" id="cart-count">0</span>
+                <button class="icon-btn badge-btn" onclick="showScreen('screen-favoritos')">
+                    <i class="fa-regular fa-heart"></i><span class="badge hidden" id="favorite-count">0</span>
                 </button>
-                <button class="icon-btn" id="btn-notify" aria-label="Notificações"><i
-                        class="fa-regular fa-bell"></i></button>
+                <button class="icon-btn badge-btn" onclick="showScreen('screen-carrinho')">
+                    <i class="fa-solid fa-cart-shopping"></i><span class="badge hidden" id="cart-count">0</span>
+                </button>
+                <button class="icon-btn badge-btn" id="btn-notify" aria-label="Notificações">
+                    <i class="fa-regular fa-bell"></i><span class="badge hidden" id="notification-count">0</span>
+                </button>
             </div>
         </header>
 
@@ -163,7 +165,13 @@
                 <h3>Guarda Roupa <span>Virtual</span></h3>
                 <p>Moda circular, consciente e acessível.</p>
                 <div class="footer-links">
-                    <a>Sobre</a><a>Termos</a><a>Privacidade</a><a onclick="showScreen('screen-suporte')">Suporte</a>
+                    <a href="#"
+                        onclick="event.preventDefault(); showInfoDialog('Sobre', 'O Guarda Roupa Virtual conecta pessoas para comprar, vender, trocar e alugar roupas de forma consciente.')">Sobre</a>
+                    <a href="#"
+                        onclick="event.preventDefault(); showInfoDialog('Termos', 'Use a plataforma com respeito, publique informações verdadeiras e combine negociações com responsabilidade. Ao utilizar o aplicativo, você concorda com estas condições.')">Termos</a>
+                    <a href="#"
+                        onclick="event.preventDefault(); showInfoDialog('Privacidade', 'Seus dados são usados para manter sua conta, facilitar suas compras e melhorar sua experiência. Não compartilhamos suas informações pessoais sem necessidade ou autorização.')">Privacidade</a>
+                    <a onclick="showScreen('screen-suporte')">Suporte</a>
                 </div>
                 <p class="copy">© 2026 Fast Fashion</p>
             </footer>
@@ -191,6 +199,7 @@
                         <option>Casacos</option>
                         <option>Calçados</option>
                         <option>Vestidos</option>
+                        <option>Outros</option>
                     </select>
                     <select id="f-tamanho" onchange="applyFilters()">
                         <option value="">Tamanho</option>
@@ -233,6 +242,16 @@
         <!-- ============ TELA: DETALHES ============ -->
         <main id="screen-detalhes" class="screen app-screen">
             <div id="detalhes-content"></div>
+        </main>
+
+        <!-- ============ TELA: PERFIL DO VENDEDOR ============ -->
+        <main id="screen-vendedor" class="screen app-screen">
+            <div id="vendedor-content"></div>
+        </main>
+
+        <!-- ============ TELA: CHAT ============ -->
+        <main id="screen-chat" class="screen app-screen">
+            <div id="chat-content"></div>
         </main>
 
         <!-- ============ TELA: CARRINHO ============ -->
@@ -323,6 +342,7 @@
                                 <option>Casacos</option>
                                 <option>Calçados</option>
                                 <option>Vestidos</option>
+                                <option>Outros</option>
                             </select>
                         </div>
                         <div class="input-group"><label>Marca</label><input type="text" id="pub-marca" /></div>
@@ -362,8 +382,8 @@
                                 class="fa-regular fa-calendar"></i> Aluguel</label>
                     </div>
                     <div class="input-row">
-                        <div class="input-group"><label>Preço (R$)</label><input type="number" id="pub-preco"
-                                step="0.01" placeholder="89,90" /></div>
+                        <div class="input-group"><label>Preço (R$)</label><input type="text" id="pub-preco"
+                                inputmode="decimal" placeholder="89,90" /></div>
                         <div class="input-group"><label>Aluguel (R$/dia)</label><input type="number"
                                 id="pub-aluguel-valor" step="0.01" placeholder="19,90" /></div>
                     </div>
@@ -385,6 +405,12 @@
         <main id="screen-favoritos" class="screen app-screen">
             <h1 class="page-title">Favoritos</h1>
             <div class="products-grid" id="fav-products"></div>
+        </main>
+
+        <!-- ============ TELA: MEUS PRODUTOS ============ -->
+        <main id="screen-meus-produtos" class="screen app-screen">
+            <h1 class="page-title">Meus produtos</h1>
+            <div class="products-grid" id="my-products"></div>
         </main>
 
         <!-- ============ TELA: PEDIDOS ============ -->
@@ -422,7 +448,7 @@
                         class="fa-solid fa-chevron-right"></i></a>
                 <a onclick="showScreen('screen-favoritos')"><i class="fa-regular fa-heart"></i> Favoritos <i
                         class="fa-solid fa-chevron-right"></i></a>
-                <a onclick="showScreen('screen-publicar')"><i class="fa-solid fa-plus"></i> Meu guarda-roupa <i
+                <a onclick="showScreen('screen-meus-produtos')"><i class="fa-solid fa-tags"></i> Meus produtos <i
                         class="fa-solid fa-chevron-right"></i></a>
                 <a onclick="showScreen('screen-suporte')"><i class="fa-solid fa-headset"></i> Suporte <i
                         class="fa-solid fa-chevron-right"></i></a>
@@ -525,22 +551,20 @@
             <h3>Notificações</h3>
             <button class="close-panel" aria-label="Fechar notificações" onclick="toggleNotifications()">×</button>
         </div>
-        <div class="notification-item">
-            <strong>Pedido enviado</strong>
-            <span>Sua peça saiu para entrega.</span>
-        </div>
-        <div class="notification-item">
-            <strong>Nova oferta</strong>
-            <span>Calças em até 20% off hoje.</span>
-        </div>
-        <div class="notification-item">
-            <strong>Troca aprovada</strong>
-            <span>Pronto para confirmar o envio.</span>
-        </div>
+        <div id="notifications-list"></div>
     </aside>
 
     <!-- TOAST -->
     <div id="toast" class="toast"></div>
+
+    <dialog id="info-dialog" class="info-dialog">
+        <div class="info-dialog-content">
+            <button class="close-panel" type="button" aria-label="Fechar" onclick="closeInfoDialog()">×</button>
+            <h2 id="info-dialog-title"></h2>
+            <p id="info-dialog-message"></p>
+            <button class="btn btn-primary btn-full" type="button" onclick="closeInfoDialog()">Fechar</button>
+        </div>
+    </dialog>
 
     <script src="app.js"></script>
 </body>
