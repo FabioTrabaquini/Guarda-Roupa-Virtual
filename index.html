@@ -95,17 +95,22 @@
         <!-- HEADER -->
         <header class="app-header">
             <div class="header-left">
-                <button class="icon-btn" id="btn-menu"><i class="fa-solid fa-bars"></i></button>
+                <button class="icon-btn" id="btn-menu" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
                 <span class="greeting">Olá, <b id="user-firstname">Clayton</b>!</span>
             </div>
             <button class="app-header-brand hidden" id="app-header-brand" onclick="showScreen('screen-home')"
                 aria-label="Voltar para a tela inicial">Guarda Roupa <span>Virtual</span></button>
             <div class="header-right">
-                <button class="icon-btn badge-btn" onclick="showScreen('screen-favoritos')">
+                <button class="icon-btn badge-btn" aria-label="Abrir favoritos"
+                    onclick="showScreen('screen-favoritos')">
                     <i class="fa-regular fa-heart"></i><span class="badge hidden" id="favorite-count">0</span>
                 </button>
-                <button class="icon-btn badge-btn" onclick="showScreen('screen-carrinho')">
+                <button class="icon-btn badge-btn" aria-label="Abrir carrinho" onclick="showScreen('screen-carrinho')">
                     <i class="fa-solid fa-cart-shopping"></i><span class="badge hidden" id="cart-count">0</span>
+                </button>
+                <button class="icon-btn badge-btn" aria-label="Abrir mensagens"
+                    onclick="showScreen('screen-mensagens'); renderMessages()">
+                    <i class="fa-regular fa-comments"></i><span class="badge hidden" id="message-count">0</span>
                 </button>
                 <button class="icon-btn badge-btn" id="btn-notify" aria-label="Notificações">
                     <i class="fa-regular fa-bell"></i><span class="badge hidden" id="notification-count">0</span>
@@ -224,6 +229,11 @@
                         <option>Bom</option>
                         <option>Usado</option>
                     </select>
+                    <input type="number" id="f-preco-min" min="0" step="0.01" placeholder="Preço min"
+                        oninput="applyFilters()" />
+                    <input type="number" id="f-preco-max" min="0" step="0.01" placeholder="Preço max"
+                        oninput="applyFilters()" />
+                    <input type="search" id="f-local" placeholder="Região" oninput="applyFilters()" />
                     <select id="f-ordenar" onchange="applyFilters()">
                         <option value="recentes">Mais recentes</option>
                         <option value="menor">Menor preço</option>
@@ -252,6 +262,13 @@
         <!-- ============ TELA: CHAT ============ -->
         <main id="screen-chat" class="screen app-screen">
             <div id="chat-content"></div>
+        </main>
+
+        <!-- ============ TELA: MENSAGENS ============ -->
+        <main id="screen-mensagens" class="screen app-screen">
+            <h1 class="page-title">Mensagens</h1>
+            <p class="page-intro">Conversas com os vendedores.</p>
+            <div id="messages-list"></div>
         </main>
 
         <!-- ============ TELA: CARRINHO ============ -->
@@ -523,7 +540,8 @@
                     class="fa-solid fa-house"></i><span>Início</span></a>
             <a class="nav-item" data-screen="screen-catalogo" onclick="navTo(this,'screen-catalogo')"><i
                     class="fa-solid fa-magnifying-glass"></i><span>Buscar</span></a>
-            <a class="nav-fab" onclick="showScreen('screen-publicar')"><i class="fa-solid fa-plus"></i></a>
+            <a href="#" class="nav-fab" aria-label="Publicar novo item"
+                onclick="event.preventDefault(); showScreen('screen-publicar')"><i class="fa-solid fa-plus"></i></a>
             <a class="nav-item" data-screen="screen-pedidos" onclick="navTo(this,'screen-pedidos')"><i
                     class="fa-regular fa-envelope"></i><span>Pedidos</span></a>
             <a class="nav-item" data-screen="screen-perfil" onclick="navTo(this,'screen-perfil')"><i
@@ -551,6 +569,9 @@
             <h3>Notificações</h3>
             <button class="close-panel" aria-label="Fechar notificações" onclick="toggleNotifications()">×</button>
         </div>
+        <button class="btn btn-ghost btn-sm notifications-read-all" type="button" onclick="markAllNotificationsRead()">
+            Marcar todas como lidas
+        </button>
         <div id="notifications-list"></div>
     </aside>
 

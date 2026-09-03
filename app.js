@@ -19,6 +19,8 @@ const TESTIMONIALS = [
     { nome: "Aline", texto: "A plataforma é intuitiva e a comunidade é muito confiável." }
 ];
 
+PRODUCTS.forEach((product) => { product.stock = Number.isInteger(product.stock) ? product.stock : 1; });
+
 const state = {
     favorites: [2, 6],
     cart: [
@@ -34,6 +36,7 @@ const state = {
     pendingImages: [],
     appliedCoupon: null,
     settings: { language: "pt-BR", currency: "BRL", payment: "Pix", notifications: true },
+    userData: {},
     currentUser: null,
     filters: {
         search: "",
@@ -41,6 +44,9 @@ const state = {
         tamanho: "",
         modalidade: "",
         estado: "",
+        precoMin: "",
+        precoMax: "",
+        local: "",
         ordenar: "recentes"
     }
 };
@@ -48,13 +54,54 @@ const state = {
 const STORAGE_KEY = "guarda-roupa-virtual-state";
 const API_BASE_URL = "http://localhost:3000/api";
 let orderFilter = "todos";
+let editingProductId = null;
+
+function currentUserKey() {
+    return normalizeEmail(state.currentUser?.email) || "visitor";
+}
+
+function activateUserData() {
+    const key = currentUserKey();
+    if (!state.userData[key]) {
+        state.userData[key] = {
+            favorites: key === "visitor" ? [...state.favorites] : [],
+            cart: key === "visitor" ? [...state.cart] : [],
+            orders: key === "visitor" ? [...state.orders] : [],
+            publishedProducts: key === "visitor" ? [...state.publishedProducts] : [],
+            drafts: key === "visitor" ? [...state.drafts] : [],
+            supportMessages: key === "visitor" ? [...state.supportMessages] : []
+        };
+    }
+    const data = state.userData[key];
+    state.favorites = data.favorites || [];
+    state.cart = data.cart || [];
+    state.orders = data.orders || [];
+    state.publishedProducts = data.publishedProducts || [];
+    state.drafts = data.drafts || [];
+    state.supportMessages = data.supportMessages || [];
+    state.publishedProducts.forEach((product) => {
+        product.ownerEmail ||= key;
+        product.stock = Number.isInteger(product.stock) ? product.stock : 1;
+    });
+}
+
+function persistUserData() {
+    state.userData[currentUserKey()] = {
+        favorites: state.favorites,
+        cart: state.cart,
+        orders: state.orders,
+        publishedProducts: state.publishedProducts,
+        drafts: state.drafts,
+        supportMessages: state.supportMessages
+    };
+}
 
 async function loadProductsFromApi() {
     try {
         const response = await fetch(`${API_BASE_URL}/products`);
         if (!response.ok) throw new Error("Nao foi possivel carregar os produtos.");
 
-        const apiProducts = (await response.json()).map((product) => ({ ...product, categoria: normalizeCategory(product.categoria) }));
+        const apiProducts = (await response.json()).map((product) => ({ ...product, categoria: normalizeCategory(product.categoria), stock: Number.isInteger(product.stock) ? product.stock : 1 }));
         const productsById = new Map(apiProducts.map((product) => [Number(product.id), product]));
         PRODUCTS = PRODUCTS.map((product) => ({ ...product, ...(productsById.get(product.id) || {}) }));
         apiProducts.forEach((product) => {
@@ -70,10 +117,10 @@ async function loadProductsFromApi() {
     }
 }
 
-async function sendProductToApi(product) {
+async function sendProductToApi(product, method = "POST") {
     try {
         await fetch(`${API_BASE_URL}/products`, {
-            method: "POST",
+            method,
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(product)
         });
@@ -83,6 +130,7 @@ async function sendProductToApi(product) {
 }
 
 function saveState() {
+    persistUserData();
     const savedState = {
         favorites: state.favorites,
         cart: state.cart,
@@ -96,6 +144,7 @@ function saveState() {
         filters: state.filters,
         appliedCoupon: state.appliedCoupon,
         settings: state.settings
+        , userData: state.userData
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(savedState));
 }
@@ -109,6 +158,8 @@ function loadState() {
         state.publishedProducts = (state.publishedProducts || []).map((product) => ({ ...product, categoria: normalizeCategory(product.categoria) }));
         PRODUCTS = [...PRODUCTS, ...state.publishedProducts];
         state.settings = { language: "pt-BR", currency: "BRL", payment: "Pix", notifications: true, ...state.settings };
+        state.userData = state.userData || {};
+        activateUserData();
         updateCurrency();
     } catch {
         localStorage.removeItem(STORAGE_KEY);
@@ -291,8 +342,8 @@ function renderNotifications() {
     updateNotificationBadge();
 }
 
-function addNotification(title, message) {
-    state.notifications.unshift({ title, message, read: false, createdAt: new Date().toISOString() });
+function addNotification(title, message, metadata = {}) {
+    state.notifications.unshift({ title, message, ...metadata, read: false, createdAt: new Date().toISOString() });
     saveState();
     renderNotifications();
 }
@@ -315,6 +366,8 @@ function productVisual(product, className) {
 function buildProductCard(product) {
     const inFavorites = state.favorites.includes(product.id);
     const inCart = state.cart.some((item) => item.id === product.id);
+    const isOwner = product.ownerEmail && product.ownerEmail === normalizeEmail(state.currentUser?.email);
+    const stock = Number.isInteger(product.stock) ? product.stock : 1;
 
     return `
         <article class="product-card" data-action="details" data-id="${product.id}" tabindex="0" role="button" aria-label="Ver detalhes de ${escapeHtml(product.nome)}">
@@ -337,13 +390,15 @@ function buildProductCard(product) {
                     <span>${escapeHtml(product.estado)}</span>
                     <span>${escapeHtml(product.tamanho)}</span>
                     <span>${escapeHtml(product.cor)}</span>
+                    <span>${stock > 0 ? `${stock} disponível${stock === 1 ? "" : "is"}` : "Indisponível"}</span>
                 </div>
             </div>
             <div class="product-actions">
                 <button class="btn btn-outline btn-sm" data-action="details" data-id="${product.id}">Detalhes</button>
-                <button class="btn btn-primary btn-sm" data-action="add-cart" data-id="${product.id}">
-                    ${inCart ? "No carrinho" : "Adicionar"}
+                <button class="btn btn-primary btn-sm" data-action="add-cart" data-id="${product.id}" ${stock < 1 ? "disabled" : ""}>
+                    ${stock < 1 ? "Indisponível" : inCart ? "No carrinho" : "Adicionar"}
                 </button>
+                ${isOwner ? `<button class="btn btn-ghost btn-sm" data-action="edit-product" data-id="${product.id}">Editar</button><button class="btn btn-danger btn-sm" data-action="delete-product" data-id="${product.id}">Excluir</button>` : ""}
             </div>
         </article>
     `;
@@ -375,20 +430,23 @@ function renderTestimonials() {
 }
 
 function getFilteredProducts() {
-    const { search, categoria, tamanho, modalidade, estado, ordenar } = state.filters;
+    const { search, categoria, tamanho, modalidade, estado, precoMin, precoMax, local, ordenar } = state.filters;
 
     let result = [...PRODUCTS].filter((product) => {
         const matchesSearch = !search || product.nome.toLowerCase().includes(search.toLowerCase()) || String(product.desc || "").toLowerCase().includes(search.toLowerCase());
         const matchesCategoria = !categoria || product.categoria === categoria;
         const matchesTamanho = !tamanho || product.tamanho === tamanho;
         const matchesEstado = !estado || product.estado === estado;
+        const matchesMinPrice = !precoMin || Number(product.preco) >= Number(precoMin);
+        const matchesMaxPrice = !precoMax || Number(product.preco) <= Number(precoMax);
+        const matchesLocal = !local || String(product.local || "").toLowerCase().includes(local.toLowerCase());
 
         let matchesModalidade = true;
         if (modalidade === "venda") matchesModalidade = product.preco !== null;
         if (modalidade === "aluguel") matchesModalidade = !!product.aluguel;
         if (modalidade === "troca") matchesModalidade = !!product.troca;
 
-        return matchesSearch && matchesCategoria && matchesTamanho && matchesEstado && matchesModalidade;
+        return matchesSearch && matchesCategoria && matchesTamanho && matchesEstado && matchesModalidade && matchesMinPrice && matchesMaxPrice && matchesLocal;
     });
 
     switch (ordenar) {
@@ -449,9 +507,51 @@ function renderMyProducts() {
     const container = document.getElementById("my-products");
     if (!container) return;
 
-    container.innerHTML = state.publishedProducts.length
-        ? state.publishedProducts.map(buildProductCard).join("")
+    const ownProducts = state.publishedProducts.filter((product) => product.ownerEmail === normalizeEmail(state.currentUser?.email));
+    container.innerHTML = ownProducts.length
+        ? ownProducts.map(buildProductCard).join("")
         : "<p class='empty-state'>Você ainda não publicou nenhum produto.</p>";
+}
+
+function deleteProduct(productId) {
+    const id = Number(productId);
+    const product = state.publishedProducts.find((item) => item.id === id);
+    if (!product || product.ownerEmail !== normalizeEmail(state.currentUser?.email)) return;
+    if (!window.confirm(`Excluir "${product.nome}"?`)) return;
+
+    state.publishedProducts = state.publishedProducts.filter((item) => item.id !== id);
+    PRODUCTS = PRODUCTS.filter((item) => item.id !== id);
+    state.cart = state.cart.filter((item) => item.id !== id);
+    state.favorites = state.favorites.filter((item) => item !== id);
+    fetch(`${API_BASE_URL}/products/${id}`, { method: "DELETE" }).catch(() => { });
+    saveState();
+    renderHome();
+    renderCatalog();
+    renderFavorites();
+    renderMyProducts();
+    updateCartBadge();
+    showToast("Anúncio excluído.");
+}
+
+function startEditProduct(productId) {
+    const product = state.publishedProducts.find((item) => item.id === Number(productId));
+    if (!product || product.ownerEmail !== normalizeEmail(state.currentUser?.email)) return;
+    editingProductId = product.id;
+    showScreen("screen-publicar");
+    const values = {
+        "pub-nome": product.nome, "pub-marca": product.marca, "pub-cor": product.cor,
+        "pub-desc": product.desc, "pub-preco": String(product.preco).replace(".", ","),
+        "pub-aluguel-valor": product.aluguel || "", "pub-local": product.local
+    };
+    Object.entries(values).forEach(([id, value]) => { const field = document.getElementById(id); if (field) field.value = value; });
+    ["pub-categoria", "pub-tamanho", "pub-condicao"].forEach((id) => {
+        const field = document.getElementById(id);
+        if (field) field.value = product[id === "pub-categoria" ? "categoria" : id === "pub-tamanho" ? "tamanho" : "estado"];
+    });
+    document.getElementById("pub-troca").checked = Boolean(product.troca);
+    document.getElementById("pub-venda").checked = product.preco !== null;
+    document.getElementById("pub-aluguel").checked = Boolean(product.aluguel);
+    showToast("Edite os dados e publique novamente.");
 }
 
 function getCartSubtotal() {
@@ -572,7 +672,7 @@ function renderCart() {
         return `
             <div class="cart-item card">
                 <div class="cart-item-left">
-                    <div class="mini-emoji">${product.emoji}</div>
+                    <div class="mini-emoji">${productVisual(product, "cart-product-photo")}</div>
                     <div>
                         <h4>${escapeHtml(product.nome)}</h4>
                                     <p>${escapeHtml(product.tamanho)} · ${escapeHtml(product.cor)}</p>
@@ -854,7 +954,22 @@ function renderChat(productId) {
     const product = getProductById(productId);
     if (!container || !product) return;
 
-    const messages = state.supportMessages.filter((item) => item.seller === product.vendedor);
+    const conversationProductId = Number(productId);
+    const isConversationNotification = (notification) => {
+        const isMessage = notification.type === "message" || notification.title?.startsWith("Nova mensagem de ");
+        return isMessage && (
+            Number(notification.productId) === conversationProductId ||
+            (!notification.productId && notification.title === `Nova mensagem de ${product.vendedor}`)
+        );
+    };
+    const hadMessageNotification = state.notifications.some(isConversationNotification);
+    if (hadMessageNotification) {
+        state.notifications = state.notifications.filter((notification) => !isConversationNotification(notification));
+        saveState();
+        renderNotifications();
+    }
+
+    const messages = state.supportMessages.filter((item) => item.seller === product.vendedor && Number(item.productId) === conversationProductId);
     container.innerHTML = `
         <button class="btn btn-outline chat-back" data-action="back-to-seller" data-id="${product.id}">
             <i class="fa-solid fa-arrow-left"></i> Voltar ao perfil
@@ -886,6 +1001,48 @@ function renderChat(productId) {
     `;
 }
 
+function getConversations() {
+    const conversations = new Map();
+    state.supportMessages.filter((message) => message.seller && message.productId).forEach((message) => {
+        const key = `${message.seller}:${message.productId}`;
+        const current = conversations.get(key);
+        if (!current || new Date(message.createdAt) > new Date(current.createdAt)) {
+            conversations.set(key, message);
+        }
+    });
+    return [...conversations.values()].sort((first, second) => new Date(second.createdAt) - new Date(first.createdAt));
+}
+
+function updateMessageBadge() {
+    const badge = document.getElementById("message-count");
+    if (!badge) return;
+    const total = getConversations().length;
+    badge.textContent = String(total);
+    badge.classList.toggle("hidden", total < 1);
+}
+
+function renderMessages() {
+    const container = document.getElementById("messages-list");
+    if (!container) return;
+
+    const conversations = getConversations();
+    container.innerHTML = conversations.length ? conversations.map((message) => {
+        const product = getProductById(message.productId);
+        return `
+            <button class="message-conversation" data-action="open-chat" data-id="${message.productId}">
+                <span class="seller-avatar">${escapeHtml(message.seller.charAt(0).toUpperCase())}</span>
+                <span class="message-conversation-body">
+                    <strong>${escapeHtml(message.seller)}</strong>
+                    <small>${escapeHtml(product?.nome || "Produto indisponível")}</small>
+                    <span>${escapeHtml(message.message)}</span>
+                </span>
+                <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+            </button>
+        `;
+    }).join("") : '<p class="empty-state">Você ainda não conversou com nenhum vendedor.</p>';
+    updateMessageBadge();
+}
+
 function handleSellerMessage(event) {
     event.preventDefault();
     const form = event.target;
@@ -902,6 +1059,7 @@ function handleSellerMessage(event) {
     saveState();
     form.reset();
     renderChat(form.dataset.productId);
+    renderMessages();
     showToast("Mensagem enviada para o vendedor!");
 
     window.setTimeout(() => {
@@ -916,11 +1074,13 @@ function handleSellerMessage(event) {
         state.supportMessages.push(sellerReply);
         addNotification(
             `Nova mensagem de ${form.dataset.seller}`,
-            "O vendedor respondeu no chat."
+            "O vendedor respondeu no chat.",
+            { type: "message", seller: form.dataset.seller, productId: Number(form.dataset.productId) }
         );
         if (document.getElementById("screen-chat")?.classList.contains("active")) {
             renderChat(form.dataset.productId);
         }
+        renderMessages();
     }, 1500);
 }
 
@@ -957,11 +1117,14 @@ function toggleNotifications() {
 
     const isOpening = panel.classList.contains("hidden");
     panel.classList.toggle("hidden");
-    if (isOpening) {
-        state.notifications.forEach((notification) => { notification.read = true; });
-        saveState();
-        renderNotifications();
-    }
+    if (isOpening) renderNotifications();
+}
+
+function markAllNotificationsRead() {
+    state.notifications.forEach((notification) => { notification.read = true; });
+    saveState();
+    renderNotifications();
+    showToast("Todas as notificações foram marcadas como lidas.");
 }
 
 function toggleFilters() {
@@ -985,6 +1148,9 @@ function clearFilters() {
     document.getElementById("f-tamanho").value = "";
     document.getElementById("f-modalidade").value = "";
     document.getElementById("f-estado").value = "";
+    document.getElementById("f-preco-min").value = "";
+    document.getElementById("f-preco-max").value = "";
+    document.getElementById("f-local").value = "";
     document.getElementById("f-ordenar").value = "recentes";
     renderCatalog();
     saveState();
@@ -996,6 +1162,9 @@ function applyFilters() {
     const tamanho = document.getElementById("f-tamanho");
     const modalidade = document.getElementById("f-modalidade");
     const estado = document.getElementById("f-estado");
+    const precoMin = document.getElementById("f-preco-min");
+    const precoMax = document.getElementById("f-preco-max");
+    const local = document.getElementById("f-local");
     const ordenar = document.getElementById("f-ordenar");
 
     state.filters.search = searchInput ? searchInput.value : "";
@@ -1003,6 +1172,9 @@ function applyFilters() {
     state.filters.tamanho = tamanho ? tamanho.value : "";
     state.filters.modalidade = modalidade ? modalidade.value : "";
     state.filters.estado = estado ? estado.value : "";
+    state.filters.precoMin = precoMin ? precoMin.value : "";
+    state.filters.precoMax = precoMax ? precoMax.value : "";
+    state.filters.local = local ? local.value : "";
     state.filters.ordenar = ordenar ? ordenar.value : "recentes";
 
     renderCatalog();
@@ -1045,9 +1217,18 @@ function toggleFavorite(productId) {
 
 function addToCart(productId) {
     const id = Number(productId);
+    const product = getProductById(id);
+    if (!product || Number(product.stock || 0) < 1) {
+        showToast("Esta peça não está disponível.");
+        return;
+    }
     const item = state.cart.find((entry) => entry.id === id);
 
     if (item) {
+        if (item.qty >= Number(product.stock || 1)) {
+            showToast("Você atingiu o limite disponível desta peça.");
+            return;
+        }
         item.qty += 1;
     } else {
         state.cart.push({ id, qty: 1 });
@@ -1066,7 +1247,14 @@ function changeQty(productId, direction) {
     const item = state.cart.find((entry) => entry.id === Number(productId));
     if (!item) return;
 
-    if (direction === "increase") item.qty += 1;
+    const product = getProductById(productId);
+    if (direction === "increase") {
+        if (product && item.qty >= Number(product.stock || 1)) {
+            showToast("Você atingiu o limite disponível desta peça.");
+            return;
+        }
+        item.qty += 1;
+    }
     else item.qty -= 1;
 
     if (item.qty <= 0) {
@@ -1091,13 +1279,19 @@ function finalizePurchase(event) {
         return sum + (product ? product.preco * entry.qty : 0);
     }, 0);
     const total = subtotal - getCouponDiscount(subtotal);
-    state.orders.unshift({
+    state.cart.forEach((entry) => {
+        const product = getProductById(entry.id);
+        if (product) product.stock = Math.max(0, Number(product.stock || 1) - entry.qty);
+    });
+    const order = {
         id: String(Date.now()).slice(-6),
         name: `${state.cart.length} item(ns)`,
         status: "processando",
         stage: 0,
         total
-    });
+    };
+    state.orders.unshift(order);
+    addNotification("Pedido confirmado", `Seu pedido #${order.id} foi recebido e está sendo processado.`);
     state.cart = [];
     updateCartBadge();
     renderCart();
@@ -1114,6 +1308,11 @@ function navTo(element, screen) {
 }
 
 function loginDemo() {
+    state.currentUser = { nome: "Visitante", email: "visitor@demo.local", cidade: "Londrina, PR" };
+    activateUserData();
+    saveState();
+    applyLoggedUser();
+    renderProfile();
     showToast("Entrando como visitante");
     showScreen("screen-home");
 }
@@ -1148,6 +1347,7 @@ function handleLogin(event) {
     if (senhaInput) senhaInput.setCustomValidity("");
     setLoginError("");
     state.currentUser = user;
+    activateUserData();
     saveState();
     applyLoggedUser();
     renderProfile();
@@ -1191,6 +1391,9 @@ function handleCadastro(event) {
         cidade
     });
 
+    state.currentUser = { nome, email, cidade };
+    activateUserData();
+
     saveState();
     showToast("Cadastro realizado com sucesso!");
     document.getElementById("form-cadastro")?.reset();
@@ -1227,9 +1430,9 @@ function resetPublishForm() {
     const form = document.getElementById("form-publicar");
     const preview = document.getElementById("photo-preview");
 
-    form?.reset();
+    if (!editingProductId) form?.reset();
     if (preview) preview.innerHTML = "";
-    state.pendingImages = [];
+    if (!editingProductId) state.pendingImages = [];
 }
 
 function showScreen(screenId, options = {}) {
@@ -1264,6 +1467,7 @@ function showScreen(screenId, options = {}) {
         "screen-detalhes",
         "screen-vendedor",
         "screen-chat",
+        "screen-mensagens",
         "screen-dados",
         "screen-carrinho",
         "screen-checkout",
@@ -1328,6 +1532,8 @@ function attachEvents() {
                 renderSellerProfile(id);
             }
             if (action === "toggle-favorite") toggleFavorite(id);
+            if (action === "edit-product") startEditProduct(id);
+            if (action === "delete-product") deleteProduct(id);
             if (action === "increase-qty") changeQty(id, "increase");
             if (action === "decrease-qty") changeQty(id, "decrease");
             if (action === "filter-category") {
@@ -1449,7 +1655,14 @@ function attachEvents() {
             if (!preview) return;
             preview.innerHTML = "";
             state.pendingImages = [];
-            [...photoInput.files].slice(0, 8).forEach((file) => {
+            const selectedFiles = [...photoInput.files];
+            if (selectedFiles.length > 8) showToast("Você pode adicionar no máximo 8 fotos.");
+            selectedFiles.slice(0, 8).forEach((file) => {
+                if (!file.type.startsWith("image/")) return;
+                if (file.size > 5 * 1024 * 1024) {
+                    showToast("Cada foto deve ter no máximo 5 MB.");
+                    return;
+                }
                 const reader = new FileReader();
                 reader.addEventListener("load", () => {
                     state.pendingImages.push(reader.result);
@@ -1470,8 +1683,16 @@ function attachEvents() {
             const description = document.getElementById("pub-desc")?.value.trim();
             const priceValue = document.getElementById("pub-preco")?.value || "";
             const price = Number(priceValue.replace(",", "."));
-            if (!name || !description || price <= 0) {
-                showToast("Preencha nome, descrição e um preço válido.");
+            const rentalPrice = Number(document.getElementById("pub-aluguel-valor")?.value || 0) || null;
+            const forSale = document.getElementById("pub-venda")?.checked;
+            const forTrade = document.getElementById("pub-troca")?.checked;
+            const forRent = document.getElementById("pub-aluguel")?.checked;
+            if (!name || !description || (!forSale && !forTrade && !forRent)) {
+                showToast("Preencha os dados e escolha pelo menos uma modalidade.");
+                return;
+            }
+            if ((forSale && price <= 0) || (forRent && rentalPrice <= 0)) {
+                showToast("Informe preços válidos para as modalidades escolhidas.");
                 return;
             }
 
@@ -1484,24 +1705,38 @@ function attachEvents() {
                 tamanho: document.getElementById("pub-tamanho")?.value || "G",
                 cor: document.getElementById("pub-cor")?.value.trim() || "Não informada",
                 estado: document.getElementById("pub-condicao")?.value || "Excelente",
-                preco: price,
-                aluguel: Number(document.getElementById("pub-aluguel-valor")?.value || 0) || null,
-                troca: document.getElementById("pub-troca")?.checked || false,
+                preco: forSale ? price : null,
+                aluguel: forRent ? rentalPrice : null,
+                troca: forTrade,
                 local: document.getElementById("pub-local")?.value.trim() || "Não informada",
                 vendedor: state.currentUser?.nome || "Visitante",
                 rating: 5,
                 pop: 0,
                 desc: description,
-                image: state.pendingImages[0] || ""
+                image: state.pendingImages[0] || "",
+                stock: 1,
+                ownerEmail: normalizeEmail(state.currentUser?.email)
             };
-            state.publishedProducts.push(publishedProduct);
-            PRODUCTS.push(publishedProduct);
-            sendProductToApi(publishedProduct);
+            const existingIndex = state.publishedProducts.findIndex((product) => product.id === editingProductId);
+            if (existingIndex >= 0) {
+                const existing = state.publishedProducts[existingIndex];
+                if (!publishedProduct.image) publishedProduct.image = existing.image || "";
+                Object.assign(existing, publishedProduct, { id: existing.id, stock: existing.stock });
+                const productIndex = PRODUCTS.findIndex((product) => product.id === existing.id);
+                if (productIndex >= 0) PRODUCTS[productIndex] = existing;
+                sendProductToApi(existing, "PUT");
+                showToast("Anúncio atualizado com sucesso!");
+            } else {
+                state.publishedProducts.push(publishedProduct);
+                PRODUCTS.push(publishedProduct);
+                sendProductToApi(publishedProduct);
+                showToast("Item publicado com sucesso!");
+            }
+            editingProductId = null;
             saveState();
             renderHome();
             renderCatalog();
             renderMyProducts();
-            showToast("Item publicado com sucesso!");
             showScreen("screen-home");
         });
     }
@@ -1530,6 +1765,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderOrders();
     renderProfile();
     renderNotifications();
+    renderMessages();
     attachEvents();
     showScreen(window.location.hash.slice(1) || "screen-login", { replace: true });
     loadProductsFromApi();
@@ -1553,4 +1789,6 @@ window.logout = logout;
 window.filterByCategory = filterByCategory;
 window.toggleMenu = toggleMenu;
 window.toggleNotifications = toggleNotifications;
+window.markAllNotificationsRead = markAllNotificationsRead;
+window.renderMessages = renderMessages;
 

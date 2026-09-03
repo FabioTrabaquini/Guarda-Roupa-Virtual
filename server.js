@@ -45,7 +45,7 @@ function sendJson(response, statusCode, data) {
     response.writeHead(statusCode, {
         "Content-Type": "application/json; charset=utf-8",
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, Authorization"
     });
     response.end(JSON.stringify(data));
@@ -98,16 +98,16 @@ const server = http.createServer(async (request, response) => {
         return;
     }
 
-    if (request.method === "POST" && requestUrl.pathname === "/api/products") {
+    if ((request.method === "POST" || request.method === "PUT") && (requestUrl.pathname === "/api/products" || requestUrl.pathname.startsWith("/api/products/"))) {
         try {
             const data = await readBody(request);
-            if (!data.nome || !data.categoria || Number(data.preco) <= 0) {
-                sendJson(response, 400, { error: "Nome, categoria e preco valido sao obrigatorios." });
+            if (!data.nome || !data.categoria || (data.preco !== null && Number(data.preco) < 0) || Number(data.stock || 0) < 0) {
+                sendJson(response, 400, { error: "Dados do produto invalidos." });
                 return;
             }
 
             const product = {
-                id: Date.now(),
+                id: request.method === "PUT" ? Number(requestUrl.pathname.split("/").pop()) : Date.now(),
                 nome: String(data.nome).trim(),
                 marca: String(data.marca || "Sem marca").trim(),
                 categoria: String(data.categoria).trim(),
@@ -123,15 +123,36 @@ const server = http.createServer(async (request, response) => {
                 desc: String(data.desc || "").trim(),
                 image: String(data.image || ""),
                 estado: String(data.estado || "Usado").trim(),
-                emoji: String(data.emoji || "👕")
+                emoji: String(data.emoji || "👕"),
+                stock: Number.isInteger(data.stock) ? data.stock : 1,
+                ownerEmail: String(data.ownerEmail || "").trim()
             };
 
-            products.push(product);
+            const existingIndex = products.findIndex((item) => Number(item.id) === product.id);
+            if (request.method === "PUT" && existingIndex < 0) {
+                sendJson(response, 404, { error: "Produto nao encontrado." });
+                return;
+            }
+            if (existingIndex >= 0) products[existingIndex] = product;
+            else products.push(product);
             fs.writeFileSync(productsFile, JSON.stringify(products, null, 2));
-            sendJson(response, 201, product);
+            sendJson(response, existingIndex >= 0 ? 200 : 201, product);
         } catch (error) {
             sendJson(response, 400, { error: error.message });
         }
+        return;
+    }
+
+    if (request.method === "DELETE" && requestUrl.pathname.startsWith("/api/products/")) {
+        const id = Number(requestUrl.pathname.split("/").pop());
+        const index = products.findIndex((product) => Number(product.id) === id);
+        if (index < 0) {
+            sendJson(response, 404, { error: "Produto nao encontrado." });
+            return;
+        }
+        products.splice(index, 1);
+        fs.writeFileSync(productsFile, JSON.stringify(products, null, 2));
+        sendJson(response, 204, null);
         return;
     }
 
