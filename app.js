@@ -1,5 +1,5 @@
 /* ================================================
-   WARDROBE VIRTUAL — app.js
+   GUARDA ROUPA VIRTUAL — app.js
    ================================================ */
 
 let PRODUCTS = [
@@ -35,7 +35,7 @@ const state = {
     notifications: [],
     pendingImages: [],
     appliedCoupon: null,
-    settings: { language: "pt-BR", currency: "BRL", payment: "Pix", notifications: true },
+    settings: { language: "pt-BR", currency: "BRL", payment: "Pix", notifications: true, seller: false },
     userData: {},
     currentUser: null,
     filters: {
@@ -56,6 +56,7 @@ const API_BASE_URL = "http://localhost:3000/api";
 let orderFilter = "todos";
 let editingProductId = null;
 
+// CONTROLE DE USUARIO E DADOS SALVOS
 function currentUserKey() {
     return normalizeEmail(state.currentUser?.email) || "visitor";
 }
@@ -117,6 +118,7 @@ async function loadProductsFromApi() {
     }
 }
 
+// COMUNICACAO COM A API DE PRODUTOS
 async function sendProductToApi(product, method = "POST") {
     try {
         await fetch(`${API_BASE_URL}/products`, {
@@ -129,6 +131,7 @@ async function sendProductToApi(product, method = "POST") {
     }
 }
 
+// PERSISTENCIA DO ESTADO NO NAVEGADOR
 function saveState() {
     persistUserData();
     const savedState = {
@@ -157,7 +160,7 @@ function loadState() {
         Object.assign(state, savedState);
         state.publishedProducts = (state.publishedProducts || []).map((product) => ({ ...product, categoria: normalizeCategory(product.categoria) }));
         PRODUCTS = [...PRODUCTS, ...state.publishedProducts];
-        state.settings = { language: "pt-BR", currency: "BRL", payment: "Pix", notifications: true, ...state.settings };
+        state.settings = { language: "pt-BR", currency: "BRL", payment: "Pix", notifications: true, seller: false, ...state.settings };
         state.userData = state.userData || {};
         activateUserData();
         updateCurrency();
@@ -166,6 +169,7 @@ function loadState() {
     }
 }
 
+// FUNCOES AUXILIARES DE TEXTO, CATEGORIA E USUARIO
 function escapeHtml(value) {
     return String(value ?? "")
         .replaceAll("&", "&amp;")
@@ -204,8 +208,10 @@ function applyLoggedUser() {
     if (firstname) firstname.textContent = firstName;
     if (profileName) profileName.textContent = name;
     if (profileCity && user?.cidade) profileCity.textContent = user.cidade;
+    document.querySelector(".seller-status")?.classList.toggle("hidden", state.settings.seller !== true);
 }
 
+// IDIOMA, MOEDA E MENSAGENS DE INTERFACE
 let currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
 const COUPONS = {
@@ -328,6 +334,7 @@ function updateNotificationBadge() {
     badge.classList.toggle("hidden", unread < 1);
 }
 
+// NOTIFICACOES E FORMATACAO DE VALORES
 function renderNotifications() {
     const container = document.getElementById("notifications-list");
     if (!container) return;
@@ -404,6 +411,7 @@ function buildProductCard(product) {
     `;
 }
 
+// RENDERIZACAO DA HOME, CATALOGO E PRODUTOS
 function renderCategories() {
     const container = document.getElementById("categories-list");
     if (!container) return;
@@ -470,6 +478,7 @@ function getFilteredProducts() {
     return result;
 }
 
+// RENDERIZACAO DAS TELAS PRINCIPAIS
 function renderHome() {
     const homeProducts = PRODUCTS.slice(0, 4);
     const recentProducts = PRODUCTS.slice(-3).reverse();
@@ -513,6 +522,7 @@ function renderMyProducts() {
         : "<p class='empty-state'>Você ainda não publicou nenhum produto.</p>";
 }
 
+// GERENCIAMENTO DOS PRODUTOS PUBLICADOS PELO USUARIO
 function deleteProduct(productId) {
     const id = Number(productId);
     const product = state.publishedProducts.find((item) => item.id === id);
@@ -561,6 +571,7 @@ function getCartSubtotal() {
     }, 0);
 }
 
+// CUPONS E CALCULO DO CARRINHO
 function getCouponDiscount(subtotal = getCartSubtotal()) {
     const coupon = state.appliedCoupon && COUPONS[state.appliedCoupon];
     if (!coupon) return 0;
@@ -594,6 +605,7 @@ function useCoupon(code) {
     showToast(`Cupom ${code} selecionado.`);
 }
 
+// PEDIDOS E PERFIL DO USUARIO
 function renderOrders() {
     const orders = document.getElementById("orders-list");
     if (!orders) return;
@@ -655,6 +667,7 @@ function renderProfile() {
 
     const firstname = document.getElementById("user-firstname");
     if (firstname) firstname.textContent = user.nome.split(" ")[0];
+    document.querySelector(".seller-status")?.classList.toggle("hidden", state.settings.seller !== true);
 }
 
 function renderCart() {
@@ -718,6 +731,7 @@ function renderCart() {
     });
 }
 
+// CHECKOUT, DADOS PESSOAIS E CONFIGURACOES
 function renderCheckout() {
     const container = document.getElementById("checkout-content");
     if (!container) return;
@@ -828,9 +842,11 @@ function fillSettingsForm() {
     const language = document.getElementById("setting-language");
     const currencySelect = document.getElementById("setting-currency");
     const payment = document.getElementById("setting-payment");
+    const seller = document.getElementById("setting-seller");
     if (language) language.value = state.settings.language;
     if (currencySelect) currencySelect.value = state.settings.currency;
     if (payment) payment.value = state.settings.payment;
+    if (seller) seller.checked = state.settings.seller === true;
 }
 
 function handleSettings(event) {
@@ -838,6 +854,7 @@ function handleSettings(event) {
     state.settings.language = document.getElementById("setting-language")?.value || "pt-BR";
     state.settings.currency = document.getElementById("setting-currency")?.value || "BRL";
     state.settings.payment = document.getElementById("setting-payment")?.value || "Pix";
+    state.settings.seller = Boolean(document.getElementById("setting-seller")?.checked);
     state.settings.notifications = Boolean(document.getElementById("setting-notifications")?.checked);
     document.documentElement.lang = state.settings.language;
     const notifications = document.getElementById("setting-notifications");
@@ -876,6 +893,7 @@ function handleOrderAction(action, orderId) {
     renderOrders();
 }
 
+// DETALHES DO PRODUTO, VENDEDOR E CHAT
 function renderDetails(productId) {
     const container = document.getElementById("detalhes-content");
     if (!container) return;
@@ -1084,6 +1102,7 @@ function handleSellerMessage(event) {
     }, 1500);
 }
 
+// NAVEGACAO, MENU, FILTROS E BUSCA
 function filterByCategory(category) {
     state.filters.categoria = category;
     const categoriaSelect = document.getElementById("f-categoria");
@@ -1195,6 +1214,7 @@ function searchFromHome(event) {
     saveState();
 }
 
+// FAVORITOS, CARRINHO E FINALIZACAO DA COMPRA
 function toggleFavorite(productId) {
     const id = Number(productId);
     const index = state.favorites.indexOf(id);
@@ -1302,6 +1322,7 @@ function finalizePurchase(event) {
     showToast("Pedido confirmado com sucesso!");
 }
 
+// LOGIN, CADASTRO, RECUPERACAO E SAIDA
 function navTo(element, screen) {
     document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item === element));
     showScreen(screen);
@@ -1435,6 +1456,7 @@ function resetPublishForm() {
     if (!editingProductId) state.pendingImages = [];
 }
 
+// TROCA DE TELAS E CONTROLE DOS EVENTOS DA APLICACAO
 function showScreen(screenId, options = {}) {
     if (screenId === "screen-checkout" && (!state.cart.length || !hasDeliveryData())) {
         startCheckout();

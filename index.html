@@ -458,7 +458,8 @@
                 <input type="file" id="profile-photo" accept="image/*" hidden />
                 <h2 id="profile-name">Clayton</h2>
                 <p id="profile-city">Londrina, PR</p>
-                <div class="profile-rating">★ 4,9 · <span>Vendedor confiável</span></div>
+                <div class="profile-rating" id="profile-rating">★ 4,9 <span class="seller-status hidden">· Vendedor
+                        confiável</span></div>
             </div>
             <div class="profile-menu">
                 <a onclick="showScreen('screen-pedidos')"><i class="fa-solid fa-box"></i> Meus pedidos <i
@@ -509,6 +510,7 @@
                         <option>Cartão</option>
                         <option>Boleto</option>
                     </select></div>
+                <label class="card-check"><input type="checkbox" id="setting-seller" /> Quero ser vendedor</label>
                 <label class="card-check"><input type="checkbox" id="setting-notifications" checked /> Receber
                     notificações de pedidos</label>
                 <button class="btn btn-primary btn-full" type="submit">Salvar configurações</button>

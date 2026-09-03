@@ -5,6 +5,7 @@ const { URL } = require("node:url");
 
 const PORT = process.env.PORT || 3000;
 
+// PRODUTOS USADOS COMO FALLBACK QUANDO O ARQUIVO AINDA NAO EXISTE
 const defaultProducts = [
     {
         id: 1,
@@ -30,6 +31,7 @@ const defaultProducts = [
 
 const productsFile = path.join(__dirname, "products.json");
 
+// LEITURA E INICIALIZACAO DO BANCO DE PRODUTOS EM JSON
 function loadProducts() {
     try {
         return JSON.parse(fs.readFileSync(productsFile, "utf8"));
@@ -41,6 +43,7 @@ function loadProducts() {
 
 const products = loadProducts();
 
+// RESPOSTAS HTTP E LEITURA DO CORPO DAS REQUISICOES
 function sendJson(response, statusCode, data) {
     response.writeHead(statusCode, {
         "Content-Type": "application/json; charset=utf-8",
@@ -80,6 +83,7 @@ function readBody(request) {
     });
 }
 
+// ROTAS DA API E SERVIDOR DE ARQUIVOS ESTATICOS
 const server = http.createServer(async (request, response) => {
     const requestUrl = new URL(request.url, `http://${request.headers.host}`);
 
