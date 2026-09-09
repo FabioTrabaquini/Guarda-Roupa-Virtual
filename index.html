@@ -95,6 +95,9 @@
         <!-- HEADER -->
         <header class="app-header">
             <div class="header-left">
+                <button class="icon-btn back-btn hidden" id="btn-back" aria-label="Voltar para a tela anterior">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
                 <button class="icon-btn" id="btn-menu" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
                 <span class="greeting">Olá, <b id="user-firstname">Clayton</b>!</span>
             </div>
@@ -472,12 +475,28 @@
                         class="fa-solid fa-chevron-right"></i></a>
                 <a onclick="showScreen('screen-dados')"><i class="fa-solid fa-pen"></i> Editar dados pessoais <i
                         class="fa-solid fa-chevron-right"></i></a>
+                <a onclick="showScreen('screen-tema')"><i class="fa-solid fa-palette"></i> Tema <i
+                        class="fa-solid fa-chevron-right"></i></a>
                 <a onclick="showScreen('screen-configuracoes')"><i class="fa-solid fa-gear"></i> Configurações <i
                         class="fa-solid fa-chevron-right"></i></a>
                 <a onclick="showScreen('screen-cupons')"><i class="fa-solid fa-ticket"></i> Cupons e ofertas <i
                         class="fa-solid fa-chevron-right"></i></a>
                 <a onclick="logout()" class="danger"><i class="fa-solid fa-right-from-bracket"></i> Sair da conta</a>
             </div>
+        </main>
+
+        <main id="screen-tema" class="screen app-screen">
+            <h1 class="page-title">Tema</h1>
+            <form id="form-tema" class="card">
+                <div class="input-group">
+                    <label for="theme-mode">Escolha o tema</label>
+                    <select id="theme-mode">
+                        <option value="light">Modo claro</option>
+                        <option value="dark">Modo escuro</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary btn-full" type="submit">Salvar tema</button>
+            </form>
         </main>
 
         <main id="screen-cupons" class="screen app-screen">
@@ -509,6 +528,10 @@
                         <option>Pix</option>
                         <option>Cartão</option>
                         <option>Boleto</option>
+                    </select></div>
+                <div class="input-group"><label for="setting-theme">Tema do site</label><select id="setting-theme">
+                        <option value="light">Claro</option>
+                        <option value="dark">Escuro</option>
                     </select></div>
                 <label class="card-check"><input type="checkbox" id="setting-seller" /> Quero ser vendedor</label>
                 <label class="card-check"><input type="checkbox" id="setting-notifications" checked /> Receber

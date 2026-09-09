@@ -35,7 +35,7 @@ const state = {
     notifications: [],
     pendingImages: [],
     appliedCoupon: null,
-    settings: { language: "pt-BR", currency: "BRL", payment: "Pix", notifications: true, seller: false },
+    settings: { language: "pt-BR", currency: "BRL", payment: "Pix", notifications: true, seller: false, theme: "light" },
     userData: {},
     currentUser: null,
     filters: {
@@ -53,8 +53,30 @@ const state = {
 
 const STORAGE_KEY = "guarda-roupa-virtual-state";
 const API_BASE_URL = "http://localhost:3000/api";
+const authScreens = ["screen-login", "screen-cadastro", "screen-recuperar"];
+const appScreens = [
+    "screen-home",
+    "screen-catalogo",
+    "screen-detalhes",
+    "screen-vendedor",
+    "screen-chat",
+    "screen-mensagens",
+    "screen-dados",
+    "screen-carrinho",
+    "screen-checkout",
+    "screen-publicar",
+    "screen-favoritos",
+    "screen-meus-produtos",
+    "screen-pedidos",
+    "screen-perfil",
+    "screen-tema",
+    "screen-suporte",
+    "screen-configuracoes",
+    "screen-cupons"
+];
 let orderFilter = "todos";
 let editingProductId = null;
+let screenHistory = [];
 
 // CONTROLE DE USUARIO E DADOS SALVOS
 function currentUserKey() {
@@ -268,6 +290,30 @@ function updateCurrency() {
     currency = new Intl.NumberFormat(locale, { style: "currency", currency: state.settings.currency });
 }
 
+function applyTheme() {
+    const theme = state.settings?.theme || "light";
+    document.body.classList.toggle("theme-dark", theme === "dark");
+    document.body.classList.toggle("theme-light", theme === "light");
+}
+
+function handleTheme(event) {
+    event.preventDefault();
+    const selectedTheme = document.getElementById("theme-mode")?.value || "light";
+    state.settings.theme = selectedTheme;
+
+    const settingsTheme = document.getElementById("setting-theme");
+    if (settingsTheme) settingsTheme.value = selectedTheme;
+
+    applyTheme();
+    saveState();
+    renderHome();
+    renderCatalog();
+    renderCart();
+    renderOrders();
+    showScreen("screen-perfil");
+    showToast("Tema salvo!");
+}
+
 function showToast(message) {
     const toast = document.getElementById("toast");
     if (!toast) return;
@@ -370,6 +416,17 @@ function productVisual(product, className) {
     return image;
 }
 
+function buildProductMeta(product, stock) {
+    const meta = [
+        escapeHtml(product.estado),
+        escapeHtml(product.tamanho),
+        escapeHtml(product.cor),
+        stock > 0 ? `${stock} disponível${stock === 1 ? "" : "is"}` : "Indisponível"
+    ];
+
+    return meta.slice(0, 3).map((item) => `<span>${item}</span>`).join("");
+}
+
 function buildProductCard(product) {
     const inFavorites = state.favorites.includes(product.id);
     const inCart = state.cart.some((item) => item.id === product.id);
@@ -394,10 +451,7 @@ function buildProductCard(product) {
                     ${product.aluguel ? `<span>${formatPrice(product.aluguel)}/dia</span>` : ""}
                 </div>
                 <div class="product-meta">
-                    <span>${escapeHtml(product.estado)}</span>
-                    <span>${escapeHtml(product.tamanho)}</span>
-                    <span>${escapeHtml(product.cor)}</span>
-                    <span>${stock > 0 ? `${stock} disponível${stock === 1 ? "" : "is"}` : "Indisponível"}</span>
+                    ${buildProductMeta(product, stock)}
                 </div>
             </div>
             <div class="product-actions">
@@ -654,6 +708,7 @@ function renderProfile() {
     const profileName = document.getElementById("profile-name");
     const profileCity = document.getElementById("profile-city");
     const avatar = document.getElementById("profile-avatar");
+    const profileThemeStatus = document.getElementById("profile-theme-status");
 
     const user = state.currentUser || { nome: "Clayton", cidade: "Londrina, PR" };
 
@@ -663,6 +718,10 @@ function renderProfile() {
         avatar.innerHTML = user.photo
             ? `<img src="${escapeHtml(user.photo)}" alt="Foto de perfil de ${escapeHtml(user.nome)}" />`
             : escapeHtml(user.nome.charAt(0).toUpperCase());
+    }
+
+    if (profileThemeStatus) {
+        profileThemeStatus.textContent = state.settings.theme === "dark" ? "Escuro" : "Claro";
     }
 
     const firstname = document.getElementById("user-firstname");
@@ -843,10 +902,17 @@ function fillSettingsForm() {
     const currencySelect = document.getElementById("setting-currency");
     const payment = document.getElementById("setting-payment");
     const seller = document.getElementById("setting-seller");
+    const theme = document.getElementById("setting-theme");
     if (language) language.value = state.settings.language;
     if (currencySelect) currencySelect.value = state.settings.currency;
     if (payment) payment.value = state.settings.payment;
     if (seller) seller.checked = state.settings.seller === true;
+    if (theme) theme.value = state.settings.theme || "light";
+}
+
+function fillThemeForm() {
+    const themeMode = document.getElementById("theme-mode");
+    if (themeMode) themeMode.value = state.settings.theme || "light";
 }
 
 function handleSettings(event) {
@@ -856,11 +922,13 @@ function handleSettings(event) {
     state.settings.payment = document.getElementById("setting-payment")?.value || "Pix";
     state.settings.seller = Boolean(document.getElementById("setting-seller")?.checked);
     state.settings.notifications = Boolean(document.getElementById("setting-notifications")?.checked);
+    state.settings.theme = document.getElementById("setting-theme")?.value || "light";
     document.documentElement.lang = state.settings.language;
     const notifications = document.getElementById("setting-notifications");
     if (notifications) notifications.checked = state.settings.notifications !== false;
     updateCurrency();
     applyTranslations();
+    applyTheme();
     saveState();
     renderHome();
     renderCatalog();
@@ -1439,6 +1507,17 @@ function handleSupport(event) {
     showToast("Mensagem enviada para o suporte!");
 }
 
+function goBack() {
+    if (screenHistory.length > 1) {
+        screenHistory.pop();
+        const previousScreen = screenHistory[screenHistory.length - 1] || "screen-home";
+        showScreen(previousScreen, { fromHistory: true });
+        return;
+    }
+
+    showScreen("screen-home");
+}
+
 function logout() {
     state.currentUser = null;
     saveState();
@@ -1470,6 +1549,14 @@ function showScreen(screenId, options = {}) {
     document.getElementById("app-header-brand")?.classList.toggle("hidden", screenId === "screen-home");
     if (screenId === "screen-dados") fillPersonalDataForm();
     if (screenId === "screen-publicar") resetPublishForm();
+    if (screenId === "screen-tema") fillThemeForm();
+
+    if (!options.fromHistory && appScreens.includes(screenId) && !authScreens.includes(screenId)) {
+        const lastScreen = screenHistory[screenHistory.length - 1];
+        if (lastScreen !== screenId) {
+            screenHistory.push(screenId);
+        }
+    }
 
     if (!options.fromHistory && window.location.hash !== `#${screenId}`) {
         const method = options.replace ? "replaceState" : "pushState";
@@ -1482,31 +1569,16 @@ function showScreen(screenId, options = {}) {
         screen.classList.toggle("active", isActive);
     });
 
-    const authScreens = ["screen-login", "screen-cadastro", "screen-recuperar"];
-    const appScreens = [
-        "screen-home",
-        "screen-catalogo",
-        "screen-detalhes",
-        "screen-vendedor",
-        "screen-chat",
-        "screen-mensagens",
-        "screen-dados",
-        "screen-carrinho",
-        "screen-checkout",
-        "screen-publicar",
-        "screen-favoritos",
-        "screen-meus-produtos",
-        "screen-pedidos",
-        "screen-perfil",
-        "screen-suporte"
-        , "screen-configuracoes"
-        , "screen-cupons"
-    ];
-
     const app = document.getElementById("app");
     if (app) {
         const shouldShowApp = appScreens.includes(screenId);
         app.classList.toggle("hidden", !shouldShowApp);
+    }
+
+    const backButton = document.getElementById("btn-back");
+    if (backButton) {
+        const shouldShowBack = appScreens.includes(screenId) && screenHistory.length > 1 && screenId !== "screen-home";
+        backButton.classList.toggle("hidden", !shouldShowBack);
     }
 
     if (screenId === "screen-login" || screenId === "screen-cadastro" || screenId === "screen-recuperar") {
@@ -1585,6 +1657,11 @@ function attachEvents() {
         renderDetails(card.dataset.id);
     });
 
+    const btnBack = document.getElementById("btn-back");
+    if (btnBack) {
+        btnBack.addEventListener("click", goBack);
+    }
+
     const btnMenu = document.getElementById("btn-menu");
     if (btnMenu) {
         btnMenu.addEventListener("click", toggleMenu);
@@ -1602,6 +1679,7 @@ function attachEvents() {
     const formPublicar = document.getElementById("form-publicar");
     const formPersonalData = document.getElementById("form-dados");
     const formSettings = document.getElementById("form-configuracoes");
+    const formTema = document.getElementById("form-tema");
     const formSuporte = document.getElementById("form-suporte");
     const photoInput = document.getElementById("pub-fotos");
     const saveDraftButton = document.getElementById("save-draft");
@@ -1632,6 +1710,10 @@ function attachEvents() {
     if (formSettings) {
         fillSettingsForm();
         formSettings.addEventListener("submit", handleSettings);
+    }
+    if (formTema) {
+        fillThemeForm();
+        formTema.addEventListener("submit", handleTheme);
     }
     if (formSuporte) formSuporte.addEventListener("submit", handleSupport);
 
@@ -1766,6 +1848,7 @@ function attachEvents() {
 
 document.addEventListener("DOMContentLoaded", () => {
     loadState();
+    applyTheme();
     if (!state.users.some((user) => user.email === "clayton@teste.com")) {
         state.users.push({
             nome: "Clayton", email: "clayton@teste.com", senha: "123456", cidade: "Londrina, PR"
@@ -1789,7 +1872,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderNotifications();
     renderMessages();
     attachEvents();
-    showScreen(window.location.hash.slice(1) || "screen-login", { replace: true });
+    showScreen(window.location.hash.slice(1) || "screen-home", { replace: true });
     loadProductsFromApi();
 
     const translationObserver = new MutationObserver(() => applyTranslations());
