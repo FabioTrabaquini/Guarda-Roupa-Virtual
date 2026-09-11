@@ -721,6 +721,12 @@ button:disabled {
     font-weight: 700;
 }
 
+body.theme-dark .tag {
+    background: var(--surface);
+    color: #EDE9FE;
+    border: 1px solid var(--border);
+}
+
 .rating {
     font-size: 0.7rem;
     color: #F59E0B;
@@ -775,6 +781,12 @@ button:disabled {
     background: #F3F4F6;
     border-radius: 999px;
     padding: 4px 7px;
+}
+
+body.theme-dark .product-meta span {
+    background: var(--primary-light);
+    color: var(--text);
+    border: 1px solid var(--border);
 }
 
 .product-actions {
