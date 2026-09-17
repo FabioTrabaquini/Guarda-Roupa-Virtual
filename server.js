@@ -161,7 +161,8 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (request.method === "GET") {
-        const requestedPath = decodeURIComponent(requestUrl.pathname === "/" ? "/index.html" : requestUrl.pathname);
+        const isProductPage = /^\/produto\/\d+(?:-[^/]*)?\/?$/.test(requestUrl.pathname);
+        const requestedPath = decodeURIComponent(requestUrl.pathname === "/" || isProductPage ? "/index.html" : requestUrl.pathname);
         const filePath = path.resolve(__dirname, `.${requestedPath}`);
         const relativePath = path.relative(__dirname, filePath);
         if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
@@ -176,6 +177,9 @@ const server = http.createServer(async (request, response) => {
                 ".html": "text/html; charset=utf-8",
                 ".js": "text/javascript; charset=utf-8",
                 ".json": "application/json; charset=utf-8",
+                ".webmanifest": "application/manifest+json; charset=utf-8",
+                ".txt": "text/plain; charset=utf-8",
+                ".xml": "application/xml; charset=utf-8",
                 ".jpeg": "image/jpeg",
                 ".jpg": "image/jpeg",
                 ".png": "image/png",

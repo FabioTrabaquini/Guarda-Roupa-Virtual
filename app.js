@@ -409,11 +409,83 @@ function getProductById(id) {
     return PRODUCTS.find((product) => product.id === Number(id));
 }
 
+function slugify(value) {
+    return String(value || "produto")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+}
+
+function productPath(product) {
+    return `/produto/${product.id}-${slugify(product.nome)}`;
+}
+
+function productIdFromPath(pathname) {
+    const match = pathname.match(/^\/produto\/(\d+)(?:-[^/]*)?\/?$/);
+    return match ? Number(match[1]) : null;
+}
+
+function openProductDetails(productId, options = {}) {
+    const product = getProductById(productId);
+    if (!product) return;
+
+    showScreen("screen-detalhes", { ...options, url: productPath(product) });
+    renderDetails(product.id);
+}
+
 function productVisual(product, className) {
     const image = product.image && /^(data:image\/|https?:\/\/)/.test(product.image)
-        ? `<img class="${className}" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.nome)}" />`
+        ? `<img class="${className}" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.nome)}" loading="lazy" decoding="async" />`
         : product.emoji;
     return image;
+}
+
+function updateSeo(screenId = "screen-home", product = null) {
+    const baseTitle = "Guarda Roupa Virtual | Moda circular";
+    const title = product ? `${product.nome} | Guarda Roupa Virtual` : screenId === "screen-catalogo" ? "Catálogo de roupas | Guarda Roupa Virtual" : baseTitle;
+    const description = product?.desc || "Compre, troque ou alugue roupas de forma consciente no Guarda Roupa Virtual.";
+    const canonical = new URL(window.location.href);
+    canonical.hash = "";
+
+    document.title = title;
+    document.querySelector('meta[name="description"]')?.setAttribute("content", description);
+    document.querySelector('meta[property="og:title"]')?.setAttribute("content", title);
+    document.querySelector('meta[property="og:description"]')?.setAttribute("content", description);
+    document.querySelector('link[rel="canonical"]')?.setAttribute("href", canonical.href);
+
+    const structuredData = product ? {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: product.nome,
+        description,
+        category: product.categoria,
+        image: product.image && /^(https?:\/\/)/.test(product.image) ? [product.image] : undefined,
+        brand: product.marca ? { "@type": "Brand", name: product.marca } : undefined,
+        offers: product.preco !== null ? {
+            "@type": "Offer",
+            priceCurrency: "BRL",
+            price: Number(product.preco).toFixed(2),
+            availability: Number(product.stock) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+            url: canonical.href
+        } : undefined,
+        aggregateRating: product.rating ? {
+            "@type": "AggregateRating",
+            ratingValue: Number(product.rating),
+            bestRating: 5,
+            ratingCount: Math.max(1, Number(product.pop) || 1)
+        } : undefined
+    } : {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        name: "Guarda Roupa Virtual",
+        description: "Marketplace de moda circular para comprar, trocar e alugar roupas.",
+        url: canonical.href
+    };
+
+    const jsonLd = document.getElementById("structured-data");
+    if (jsonLd) jsonLd.textContent = JSON.stringify(structuredData);
 }
 
 function buildProductMeta(product, stock) {
@@ -968,9 +1040,12 @@ function renderDetails(productId) {
 
     const product = getProductById(productId);
     if (!product) {
+        updateSeo("screen-detalhes");
         container.innerHTML = "<p class='empty-state'>Produto não encontrado.</p>";
         return;
     }
+
+    updateSeo("screen-detalhes", product);
 
     const recommendedProducts = PRODUCTS
         .filter((item) => item.id !== product.id)
@@ -1550,6 +1625,7 @@ function showScreen(screenId, options = {}) {
     if (screenId === "screen-dados") fillPersonalDataForm();
     if (screenId === "screen-publicar") resetPublishForm();
     if (screenId === "screen-tema") fillThemeForm();
+    updateSeo(screenId);
 
     if (!options.fromHistory && appScreens.includes(screenId) && !authScreens.includes(screenId)) {
         const lastScreen = screenHistory[screenHistory.length - 1];
@@ -1558,7 +1634,10 @@ function showScreen(screenId, options = {}) {
         }
     }
 
-    if (!options.fromHistory && window.location.hash !== `#${screenId}`) {
+    if (options.url) {
+        const method = options.replace ? "replaceState" : "pushState";
+        window.history[method]({ screenId }, "", options.url);
+    } else if (!options.fromHistory && window.location.hash !== `#${screenId}`) {
         const method = options.replace ? "replaceState" : "pushState";
         window.history[method]({ screenId }, "", `#${screenId}`);
     }
@@ -1606,8 +1685,7 @@ function attachEvents() {
 
             if (action === "add-cart") addToCart(id);
             if (action === "details") {
-                showScreen("screen-detalhes");
-                renderDetails(id);
+                openProductDetails(id);
             }
             if (action === "view-seller") {
                 showScreen("screen-vendedor");
@@ -1653,8 +1731,7 @@ function attachEvents() {
         if (!card || event.target !== card || !["Enter", " "].includes(event.key)) return;
 
         event.preventDefault();
-        showScreen("screen-detalhes");
-        renderDetails(card.dataset.id);
+        openProductDetails(card.dataset.id);
     });
 
     const btnBack = document.getElementById("btn-back");
@@ -1873,13 +1950,22 @@ document.addEventListener("DOMContentLoaded", () => {
     renderMessages();
     attachEvents();
     showScreen(window.location.hash.slice(1) || "screen-home", { replace: true });
-    loadProductsFromApi();
+    loadProductsFromApi().then(() => {
+        const productId = productIdFromPath(window.location.pathname);
+        if (productId) openProductDetails(productId, { replace: true });
+    });
 
     const translationObserver = new MutationObserver(() => applyTranslations());
     translationObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
 });
 
 window.addEventListener("popstate", () => {
+    const productId = productIdFromPath(window.location.pathname);
+    if (productId) {
+        openProductDetails(productId, { fromHistory: true });
+        return;
+    }
+
     const screenId = window.location.hash.slice(1) || "screen-home";
     showScreen(screenId, { fromHistory: true });
 });

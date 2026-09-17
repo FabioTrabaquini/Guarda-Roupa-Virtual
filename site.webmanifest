@@ -1,0 +1,17 @@
+{
+    "name": "Guarda Roupa Virtual",
+    "short_name": "Guarda Roupa",
+    "description": "Marketplace de moda circular para comprar, trocar e alugar roupas.",
+    "lang": "pt-BR",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#F7F5FB",
+    "theme_color": "#8B5CF6",
+    "icons": [
+        {
+            "src": "/imagens/cabide.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        }
+    ]
+}
