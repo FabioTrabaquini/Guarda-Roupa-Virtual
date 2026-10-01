@@ -180,6 +180,8 @@
             </div>
             <div class="products-grid" id="home-recent"></div>
 
+            <section class="impact-summary" id="impact-summary" aria-label="Impacto da comunidade"></section>
+
             <div class="section-header">
                 <h2>O que dizem sobre nós</h2>
             </div>
@@ -265,6 +267,14 @@
             </div>
 
             <p class="results-count" id="results-count"></p>
+            <section class="saved-searches" aria-labelledby="saved-searches-title">
+                <div class="section-header">
+                    <h2 id="saved-searches-title">Buscas salvas</h2>
+                    <button class="btn btn-outline btn-sm" data-action="save-search"><i class="fa-regular fa-bell"></i>
+                        Salvar filtros atuais</button>
+                </div>
+                <div id="saved-searches-list"></div>
+            </section>
             <div class="products-grid" id="catalog-products"></div>
         </main>
 
@@ -361,9 +371,18 @@
                     <label class="card-label" for="pub-fotos">Fotos do item *</label>
                     <div class="photo-upload">
                         <i class="fa-solid fa-camera"></i>
-                        <p>Adicionar fotos</p><small>Até 8 fotos</small>
+                        <p>Mostre a peça com luz natural, frente e costas</p><small>Até 8 fotos · JPG, PNG ou WebP ·
+                            máximo 5 MB cada</small>
                         <input type="file" id="pub-fotos" accept="image/*" multiple />
                         <div id="photo-preview" class="photo-preview"></div>
+                        <div id="photo-quality" class="photo-quality" aria-live="polite">
+                            <strong>Guia de fotos</strong>
+                            <ul>
+                                <li>Use um fundo simples e boa iluminação.</li>
+                                <li>Inclua frente, costas e etiqueta/tamanho.</li>
+                                <li>Mostre de perto qualquer detalhe ou desgaste.</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
 
@@ -403,6 +422,23 @@
                             </select>
                         </div>
                     </div>
+                    <fieldset class="measurement-fields">
+                        <legend>Medidas da peça (cm) · opcionais</legend>
+                        <div class="input-row">
+                            <div class="input-group"><label for="pub-busto">Busto</label><input type="number"
+                                    id="pub-busto" min="0" max="250" step="0.5" placeholder="ex.: 92" /></div>
+                            <div class="input-group"><label for="pub-cintura">Cintura</label><input type="number"
+                                    id="pub-cintura" min="0" max="250" step="0.5" placeholder="ex.: 76" /></div>
+                            <div class="input-group"><label for="pub-quadril">Quadril</label><input type="number"
+                                    id="pub-quadril" min="0" max="250" step="0.5" placeholder="ex.: 98" /></div>
+                            <div class="input-group"><label for="pub-comprimento">Comprimento</label><input
+                                    type="number" id="pub-comprimento" min="0" max="250" step="0.5"
+                                    placeholder="ex.: 62" /></div>
+                        </div>
+                        <div class="input-group"><label for="pub-caimento">Caimento e ajuste</label><input type="text"
+                                id="pub-caimento" maxlength="120"
+                                placeholder="ex.: modelagem ampla, tecido sem elasticidade" /></div>
+                    </fieldset>
                     <div class="input-group"><label>Descrição *</label><textarea id="pub-desc" rows="3"
                             required></textarea></div>
                 </div>
@@ -439,7 +475,11 @@
 
         <!-- ============ TELA: FAVORITOS ============ -->
         <main id="screen-favoritos" class="screen app-screen">
-            <h1 class="page-title">Favoritos</h1>
+            <div class="page-title-row">
+                <h1 class="page-title">Favoritos</h1><button class="btn btn-outline btn-sm"
+                    data-action="share-wishlist"><i class="fa-solid fa-arrow-up-from-bracket"></i> Compartilhar
+                    lista</button>
+            </div>
             <div class="products-grid" id="fav-products"></div>
         </main>
 

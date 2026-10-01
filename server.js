@@ -60,7 +60,7 @@ function readBody(request) {
 
         request.on("data", (chunk) => {
             body += chunk;
-            if (body.length > 1_000_000) {
+            if (body.length > 6_000_000) {
                 request.destroy();
                 reject(new Error("Corpo da requisicao muito grande."));
             }
@@ -111,7 +111,7 @@ const server = http.createServer(async (request, response) => {
             }
 
             const product = {
-                id: request.method === "PUT" ? Number(requestUrl.pathname.split("/").pop()) : Date.now(),
+                id: request.method === "PUT" ? Number(requestUrl.pathname.split("/").pop()) : Number(data.id) || Date.now(),
                 nome: String(data.nome).trim(),
                 marca: String(data.marca || "Sem marca").trim(),
                 categoria: String(data.categoria).trim(),
@@ -126,6 +126,14 @@ const server = http.createServer(async (request, response) => {
                 pop: Number(data.pop) || 0,
                 desc: String(data.desc || "").trim(),
                 image: String(data.image || ""),
+                images: Array.isArray(data.images) ? data.images.slice(0, 8).filter((image) => typeof image === "string" && /^data:image\/(?:jpeg|png|webp);base64,/.test(image)) : [],
+                measurements: {
+                    bust: Number(data.measurements?.bust) || null,
+                    waist: Number(data.measurements?.waist) || null,
+                    hip: Number(data.measurements?.hip) || null,
+                    length: Number(data.measurements?.length) || null,
+                    fit: String(data.measurements?.fit || "").trim()
+                },
                 estado: String(data.estado || "Usado").trim(),
                 emoji: String(data.emoji || "👕"),
                 stock: Number.isInteger(data.stock) ? data.stock : 1,

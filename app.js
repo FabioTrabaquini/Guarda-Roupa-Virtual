@@ -23,6 +23,7 @@ PRODUCTS.forEach((product) => { product.stock = Number.isInteger(product.stock) 
 
 const state = {
     favorites: [2, 6],
+    savedSearches: [],
     cart: [
         { id: 1, qty: 1 },
         { id: 3, qty: 1 }
@@ -32,6 +33,7 @@ const state = {
     publishedProducts: [],
     drafts: [],
     supportMessages: [],
+    reviews: [],
     notifications: [],
     pendingImages: [],
     appliedCoupon: null,
@@ -92,7 +94,8 @@ function activateUserData() {
             orders: key === "visitor" ? [...state.orders] : [],
             publishedProducts: key === "visitor" ? [...state.publishedProducts] : [],
             drafts: key === "visitor" ? [...state.drafts] : [],
-            supportMessages: key === "visitor" ? [...state.supportMessages] : []
+            supportMessages: key === "visitor" ? [...state.supportMessages] : [],
+            savedSearches: key === "visitor" ? [...(state.savedSearches || [])] : []
         };
     }
     const data = state.userData[key];
@@ -102,6 +105,7 @@ function activateUserData() {
     state.publishedProducts = data.publishedProducts || [];
     state.drafts = data.drafts || [];
     state.supportMessages = data.supportMessages || [];
+    state.savedSearches = data.savedSearches || [];
     state.publishedProducts.forEach((product) => {
         product.ownerEmail ||= key;
         product.stock = Number.isInteger(product.stock) ? product.stock : 1;
@@ -115,7 +119,8 @@ function persistUserData() {
         orders: state.orders,
         publishedProducts: state.publishedProducts,
         drafts: state.drafts,
-        supportMessages: state.supportMessages
+        supportMessages: state.supportMessages,
+        savedSearches: state.savedSearches
     };
 }
 
@@ -125,12 +130,14 @@ async function loadProductsFromApi() {
         if (!response.ok) throw new Error("Nao foi possivel carregar os produtos.");
 
         const apiProducts = (await response.json()).map((product) => ({ ...product, categoria: normalizeCategory(product.categoria), stock: Number.isInteger(product.stock) ? product.stock : 1 }));
+        const knownProductIds = new Set(PRODUCTS.map((product) => Number(product.id)));
         const productsById = new Map(apiProducts.map((product) => [Number(product.id), product]));
         PRODUCTS = PRODUCTS.map((product) => ({ ...product, ...(productsById.get(product.id) || {}) }));
         apiProducts.forEach((product) => {
             if (!PRODUCTS.some((localProduct) => localProduct.id === Number(product.id))) {
                 PRODUCTS.push(product);
             }
+            if (!knownProductIds.has(Number(product.id))) checkSavedSearchAlerts(product);
         });
         renderHome();
         renderCatalog();
@@ -143,7 +150,8 @@ async function loadProductsFromApi() {
 // COMUNICACAO COM A API DE PRODUTOS
 async function sendProductToApi(product, method = "POST") {
     try {
-        await fetch(`${API_BASE_URL}/products`, {
+        const endpoint = method === "PUT" ? `${API_BASE_URL}/products/${product.id}` : `${API_BASE_URL}/products`;
+        await fetch(endpoint, {
             method,
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(product)
@@ -164,6 +172,8 @@ function saveState() {
         publishedProducts: state.publishedProducts,
         drafts: state.drafts,
         supportMessages: state.supportMessages,
+        savedSearches: state.savedSearches,
+        reviews: state.reviews,
         notifications: state.notifications,
         currentUser: state.currentUser,
         filters: state.filters,
@@ -387,7 +397,7 @@ function renderNotifications() {
 
     const notifications = state.notifications;
     container.innerHTML = notifications.length ? notifications.map((notification) => `
-        <div class="notification-item ${notification.read ? "" : "unread"}">
+        <div class="notification-item ${notification.read ? "" : "unread"}" ${notification.productId ? `data-action="open-notification-product" data-id="${Number(notification.productId)}" role="button" tabindex="0"` : ""}>
             <strong>${escapeHtml(notification.title)}</strong>
             <span>${escapeHtml(notification.message)}</span>
         </div>
@@ -440,6 +450,38 @@ function productVisual(product, className) {
         ? `<img class="${className}" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.nome)}" loading="lazy" decoding="async" />`
         : product.emoji;
     return image;
+}
+
+async function prepareProductImage(file) {
+    const bitmap = await createImageBitmap(file);
+    const originalWidth = bitmap.width;
+    const originalHeight = bitmap.height;
+    const scale = Math.min(1, 1000 / Math.max(originalWidth, originalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(originalWidth * scale);
+    canvas.height = Math.round(originalHeight * scale);
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const sample = document.createElement("canvas");
+    sample.width = 32;
+    sample.height = 32;
+    const sampleContext = sample.getContext("2d", { willReadFrequently: true });
+    sampleContext.drawImage(canvas, 0, 0, sample.width, sample.height);
+    const pixels = sampleContext.getImageData(0, 0, sample.width, sample.height).data;
+    const luminance = [];
+    for (let index = 0; index < pixels.length; index += 4) {
+        luminance.push(0.2126 * pixels[index] + 0.7152 * pixels[index + 1] + 0.0722 * pixels[index + 2]);
+    }
+    const brightness = luminance.reduce((sum, value) => sum + value, 0) / luminance.length;
+    const contrast = Math.sqrt(luminance.reduce((sum, value) => sum + (value - brightness) ** 2, 0) / luminance.length);
+    return {
+        src: canvas.toDataURL("image/jpeg", 0.62),
+        originalWidth,
+        originalHeight,
+        smallFile: file.size < 60 * 1024,
+        brightness,
+        contrast
+    };
 }
 
 function updateSeo(screenId = "screen-home", product = null) {
@@ -615,6 +657,7 @@ function renderHome() {
     if (homeProductsNode) homeProductsNode.innerHTML = homeProducts.map(buildProductCard).join("");
     if (recentNode) recentNode.innerHTML = recentProducts.map(buildProductCard).join("");
 
+    renderImpactSummary();
     renderCategories();
     renderTestimonials();
 }
@@ -628,14 +671,159 @@ function renderCatalog() {
     container.innerHTML = filtered.length ? filtered.map(buildProductCard).join("") : "<p class='empty-state'>Nenhuma peça encontrada com esses filtros.</p>";
 
     if (counter) counter.textContent = `${filtered.length} itens encontrados`;
+    renderSavedSearches();
+}
+
+function getAllLocalOrders() {
+    const ordersByOwner = new Map();
+    Object.entries(state.userData || {}).forEach(([owner, userData]) => {
+        (userData.orders || []).forEach((order) => ordersByOwner.set(`${owner}:${order.id}`, order));
+    });
+    if (!state.userData?.[currentUserKey()]) {
+        state.orders.forEach((order) => ordersByOwner.set(`${currentUserKey()}:${order.id}`, order));
+    }
+    return [...ordersByOwner.values()];
+}
+
+function getCompletedReuseCount() {
+    return getAllLocalOrders()
+        .filter((order) => Number(order.stage) >= 3 || order.status === "entregue")
+        .reduce((total, order) => total + (order.items || []).reduce((quantity, item) => quantity + Number(item.qty || 1), 0), 0);
+}
+
+function renderImpactSummary() {
+    const summary = document.getElementById("impact-summary");
+    if (!summary) return;
+    const reused = getCompletedReuseCount();
+    const published = PRODUCTS.length;
+    const waterLiters = (reused * 2700).toLocaleString("pt-BR");
+    const emissionsKg = (reused * 2).toLocaleString("pt-BR");
+    summary.innerHTML = `
+        <div><strong>${published}</strong><span>peças disponíveis para circular</span></div>
+        <div><strong>${reused}</strong><span>peças reutilizadas em pedidos concluídos</span></div>
+        <div><strong>${waterLiters} L</strong><span>de água estimada</span></div>
+        <div><strong>${emissionsKg} kg</strong><span>de CO₂e estimado</span></div>
+        <p>Estimativa ilustrativa: considera até 2.700 L de água e 2 kg de CO₂e por peça reutilizada, como referência de uma camiseta de algodão. Não é uma medição do ciclo de vida; o impacto real varia por material, produção e transporte.</p>
+    `;
+}
+
+function saveCurrentSearch() {
+    const filters = { ...state.filters };
+    if (!Object.values(filters).some((value) => value && value !== "recentes")) {
+        showToast("Defina ao menos um filtro antes de salvar a busca.");
+        return;
+    }
+    const id = `${Date.now()}`;
+    const label = [filters.search, filters.categoria, filters.tamanho, filters.local].filter(Boolean).join(" · ") || "Busca com filtros";
+    const alertedProductIds = PRODUCTS.filter((product) => productMatchesSearchFilters(product, filters)).map((product) => product.id);
+    state.savedSearches.unshift({ id, label, filters, alertedProductIds });
+    saveState();
+    renderSavedSearches();
+    showToast("Busca salva. Avisaremos quando surgir uma peça compatível.");
+}
+
+function renderSavedSearches() {
+    const container = document.getElementById("saved-searches-list");
+    if (!container) return;
+    container.innerHTML = state.savedSearches.length ? state.savedSearches.map((search) => `
+        <div class="saved-search-row">
+            <button class="saved-search-apply" data-action="apply-saved-search" data-id="${escapeHtml(search.id)}">${escapeHtml(search.label)}</button>
+            <button class="icon-btn" data-action="delete-saved-search" data-id="${escapeHtml(search.id)}" aria-label="Excluir busca salva" title="Excluir busca salva"><i class="fa-solid fa-trash"></i></button>
+        </div>
+    `).join("") : '<p class="empty-state">Buscas salvas aparecem aqui.</p>';
+}
+
+function applySavedSearch(searchId) {
+    const search = state.savedSearches.find((item) => item.id === String(searchId));
+    if (!search) return;
+    state.filters = { ...state.filters, ...search.filters };
+    fillCatalogFilters();
+    showScreen("screen-catalogo", { keepFilters: true });
+    renderCatalog();
+}
+
+function fillCatalogFilters() {
+    const values = {
+        "search-input": "search", "f-categoria": "categoria", "f-tamanho": "tamanho",
+        "f-modalidade": "modalidade", "f-estado": "estado", "f-preco-min": "precoMin",
+        "f-preco-max": "precoMax", "f-local": "local", "f-ordenar": "ordenar"
+    };
+    Object.entries(values).forEach(([id, key]) => {
+        const field = document.getElementById(id);
+        if (field) field.value = state.filters[key] || "";
+    });
+}
+
+function checkSavedSearchAlerts(product) {
+    state.savedSearches.forEach((search) => {
+        const matches = productMatchesSearchFilters(product, search.filters || {});
+        if (matches && !(search.alertedProductIds || []).includes(product.id)) {
+            search.alertedProductIds = [...(search.alertedProductIds || []), product.id];
+            addNotification("Peça compatível com sua busca", `${product.nome} combina com “${search.label}”.`, { type: "saved-search", productId: product.id });
+        }
+    });
+}
+
+function productMatchesSearchFilters(product, filters) {
+    return (!filters.search || `${product.nome} ${product.desc || ""}`.toLowerCase().includes(filters.search.toLowerCase()))
+        && (!filters.categoria || normalizeCategory(product.categoria) === normalizeCategory(filters.categoria))
+        && (!filters.tamanho || product.tamanho === filters.tamanho)
+        && (!filters.estado || product.estado === filters.estado)
+        && (!filters.local || String(product.local || "").toLowerCase().includes(filters.local.toLowerCase()))
+        && (!filters.precoMin || product.preco !== null && Number(product.preco) >= Number(filters.precoMin))
+        && (!filters.precoMax || product.preco !== null && Number(product.preco) <= Number(filters.precoMax))
+        && (!filters.modalidade || filters.modalidade === "venda" && product.preco !== null || filters.modalidade === "aluguel" && !!product.aluguel || filters.modalidade === "troca" && !!product.troca);
 }
 
 function renderFavorites() {
     const container = document.getElementById("fav-products");
     if (!container) return;
 
-    const favorites = PRODUCTS.filter((product) => state.favorites.includes(product.id));
+    const sharedIds = new URLSearchParams(window.location.search).get("wishlist")?.split(",").map(Number).filter(Number.isFinite);
+    const favorites = PRODUCTS.filter((product) => (sharedIds ? sharedIds : state.favorites).includes(Number(product.id)));
     container.innerHTML = favorites.length ? favorites.map(buildProductCard).join("") : "<p class='empty-state'>Você ainda não marcou nenhum favorito.</p>";
+}
+
+async function shareWishlist() {
+    if (!state.favorites.length) {
+        showToast("Adicione peças aos favoritos antes de compartilhar.");
+        return;
+    }
+    const link = new URL(window.location.href);
+    link.search = "";
+    link.hash = "";
+    link.searchParams.set("wishlist", state.favorites.join(","));
+    try {
+        if (navigator.share) await navigator.share({ title: "Minha lista de favoritos", url: link.href });
+        else {
+            await navigator.clipboard.writeText(link.href);
+            showToast("Link da lista copiado.");
+        }
+    } catch (error) {
+        if (error.name !== "AbortError") showInfoDialog("Compartilhar lista", link.href);
+    }
+}
+
+function getSellerMetrics(sellerName) {
+    const sellerProducts = PRODUCTS.filter((product) => product.vendedor === sellerName);
+    const sellerReviews = (state.reviews || []).filter((review) => review.seller === sellerName);
+    const ratings = sellerReviews.length ? sellerReviews.map((review) => Number(review.rating)) : sellerProducts.map((product) => Number(product.rating));
+    const completedSales = getAllLocalOrders().reduce((total, order) => {
+        if (Number(order.stage) < 3 && order.status !== "entregue") return total;
+        return total + (order.items || []).filter((item) => item.seller === sellerName).reduce((quantity, item) => quantity + Number(item.qty || 1), 0);
+    }, 0);
+    const allMessages = [...new Map([...Object.values(state.userData || {}).flatMap((userData) => userData.supportMessages || []), ...state.supportMessages].map((message) => [`${message.seller}:${message.productId}:${message.createdAt}:${message.message}`, message])).values()];
+    const responseDurations = allMessages.filter((message) => message.seller === sellerName && !message.sender).flatMap((message) => {
+        const reply = allMessages.find((candidate) => candidate.sender === "seller" && candidate.seller === sellerName && Number(candidate.productId) === Number(message.productId) && new Date(candidate.createdAt) >= new Date(message.createdAt));
+        return reply ? [new Date(reply.createdAt) - new Date(message.createdAt)] : [];
+    });
+    const averageResponseMinutes = responseDurations.length ? Math.round(responseDurations.reduce((sum, duration) => sum + duration, 0) / responseDurations.length / 60000) : null;
+    return {
+        rating: ratings.length ? (ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length).toFixed(1) : "Novo",
+        completedSales,
+        averageResponseMinutes,
+        reviews: sellerReviews.sort((first, second) => new Date(second.createdAt) - new Date(first.createdAt)).slice(0, 3)
+    };
 }
 
 function renderMyProducts() {
@@ -672,12 +860,18 @@ function deleteProduct(productId) {
 function startEditProduct(productId) {
     const product = state.publishedProducts.find((item) => item.id === Number(productId));
     if (!product || product.ownerEmail !== normalizeEmail(state.currentUser?.email)) return;
+    state.pendingImages = [];
+    const photoInput = document.getElementById("pub-fotos");
+    if (photoInput) photoInput.value = "";
     editingProductId = product.id;
     showScreen("screen-publicar");
     const values = {
         "pub-nome": product.nome, "pub-marca": product.marca, "pub-cor": product.cor,
         "pub-desc": product.desc, "pub-preco": String(product.preco).replace(".", ","),
-        "pub-aluguel-valor": product.aluguel || "", "pub-local": product.local
+        "pub-aluguel-valor": product.aluguel || "", "pub-local": product.local,
+        "pub-busto": product.measurements?.bust || "", "pub-cintura": product.measurements?.waist || "",
+        "pub-quadril": product.measurements?.hip || "", "pub-comprimento": product.measurements?.length || "",
+        "pub-caimento": product.measurements?.fit || ""
     };
     Object.entries(values).forEach(([id, value]) => { const field = document.getElementById(id); if (field) field.value = value; });
     ["pub-categoria", "pub-tamanho", "pub-condicao"].forEach((id) => {
@@ -687,6 +881,11 @@ function startEditProduct(productId) {
     document.getElementById("pub-troca").checked = Boolean(product.troca);
     document.getElementById("pub-venda").checked = product.preco !== null;
     document.getElementById("pub-aluguel").checked = Boolean(product.aluguel);
+    const existingImages = product.images?.length ? product.images : product.image ? [product.image] : [];
+    const preview = document.getElementById("photo-preview");
+    if (preview) preview.innerHTML = existingImages.map((image, index) => `<img src="${escapeHtml(image)}" alt="Foto atual ${index + 1} do anúncio" />`).join("");
+    const quality = document.getElementById("photo-quality");
+    if (quality) quality.innerHTML = `<strong>${existingImages.length} foto${existingImages.length === 1 ? "" : "s"} no anúncio</strong><ul><li>Selecione novas fotos somente se quiser substituir as atuais.</li></ul>`;
     showToast("Edite os dados e publique novamente.");
 }
 
@@ -746,22 +945,38 @@ function renderOrders() {
         if (orderFilter === "processando") return stage === 0;
         if (orderFilter === "enviado") return stage === 1;
         if (orderFilter === "recebido") return stage === 2;
-        if (orderFilter === "avaliar") return stage >= 3;
+        if (orderFilter === "avaliar") return stage >= 3 && !order.rating;
         if (orderFilter === "reembolso") return stage >= 2;
         return true;
     });
 
     orders.innerHTML = ordersToRender.length ? ordersToRender.map((order) => {
-        const stage = order.stage ?? (order.status === "entregue" ? 3 : 1);
+        const stage = order.stage ?? (order.status === "entregue" ? 3 : order.status === "em transporte" ? 1 : 0);
+        const stages = ["Processando", "Enviado", "A caminho", "Concluído"];
         return `
         <div class="card order-card">
             <h3>Pedido #${escapeHtml(order.id)}</h3>
-            <p>${escapeHtml(order.name)} · Status: ${escapeHtml(order.status)}</p>
+            <p>${escapeHtml(order.items?.map((item) => item.name).join(", ") || order.name)} · Status: ${escapeHtml(order.status)}</p>
             <strong>${formatPrice(order.total)}</strong>
+            <ol class="order-tracking" aria-label="Etapas do pedido">
+                ${stages.map((label, index) => `<li class="${stage >= index ? "complete" : ""}"><span>${index + 1}</span>${label}</li>`).join("")}
+            </ol>
             <div class="order-actions">
                 <button class="btn btn-outline btn-sm" data-action="track-order" data-id="${escapeHtml(order.id)}">Rastrear pedido</button>
-                ${state.orders.includes(order) && stage < 3 ? `<button class="btn btn-outline btn-sm" data-action="advance-order" data-id="${escapeHtml(order.id)}">Avançar etapa</button>` : ""}
+                ${state.orders.includes(order) && stage === 0 ? `<button class="btn btn-outline btn-sm" data-action="advance-order" data-id="${escapeHtml(order.id)}">Simular envio</button>` : ""}
+                ${state.orders.includes(order) && stage === 1 ? `<button class="btn btn-outline btn-sm" data-action="advance-order" data-id="${escapeHtml(order.id)}">Marcar a caminho</button>` : ""}
+                ${state.orders.includes(order) && stage === 2 ? `<button class="btn btn-primary btn-sm" data-action="confirm-delivery" data-id="${escapeHtml(order.id)}">Confirmar recebimento</button>` : ""}
             </div>
+            ${state.orders.includes(order) && stage === 3 && !order.rating ? `
+                <form class="order-review-form" data-order-id="${escapeHtml(order.id)}">
+                    <h4>Avalie sua compra</h4>
+                    <div class="input-row">
+                        <div class="input-group"><label for="review-rating-${escapeHtml(order.id)}">Sua nota</label><select id="review-rating-${escapeHtml(order.id)}" name="rating" required><option value="">Selecione de 1 a 5</option><option value="5">★★★★★ · 5, excelente</option><option value="4">★★★★ · 4, muito boa</option><option value="3">★★★ · 3, boa</option><option value="2">★★ · 2, abaixo do esperado</option><option value="1">★ · 1, ruim</option></select></div>
+                        <div class="input-group"><label for="review-text-${escapeHtml(order.id)}">Comentário (opcional)</label><textarea id="review-text-${escapeHtml(order.id)}" name="text" rows="2" maxlength="400" placeholder="Como foi a experiência com a peça e o vendedor?"></textarea></div>
+                    </div>
+                    <button class="btn btn-outline btn-sm" type="submit">Publicar avaliação</button>
+                </form>
+            ` : order.rating ? `<p class="order-review-saved">Sua avaliação: ${"★".repeat(Number(order.rating))}${"☆".repeat(5 - Number(order.rating))}</p>` : ""}
         </div>
     `;
     }).join("") : `<p class="empty-state">Nenhum pedido nesta categoria.</p>`;
@@ -1015,22 +1230,61 @@ function handleOrderAction(action, orderId) {
         showToast(action === "track-order" ? "Pedido em transporte. Código de rastreio: GV" + orderId : "Ação disponível para pedidos reais.");
         return;
     }
-    if (action === "track-order") showToast(`Pedido ${order.id}: ${order.status}. Código GV${order.id}`);
+    if (action === "track-order") showToast(`Pedido ${order.id}: ${order.status}. Código de demonstração GV${order.id}.`);
     if (action === "advance-order") {
-        order.stage = Math.min(3, (order.stage ?? 0) + 1);
-        order.status = ["processando", "enviado", "recebido", "recebido"][order.stage];
+        order.stage = Math.min(2, (order.stage ?? 0) + 1);
+        order.status = ["processando", "enviado", "a caminho"][order.stage];
         showToast(`Pedido atualizado: ${order.status}.`);
+    }
+    if (action === "confirm-delivery") {
+        if (Number(order.stage) !== 2) {
+            showToast("Confirme o recebimento quando o pedido estiver a caminho.");
+            return;
+        }
+        order.stage = 3;
+        order.status = "entregue";
+        order.deliveredAt = new Date().toISOString();
+        showToast("Recebimento confirmado. Obrigado por circular essa peça!");
     }
     if (action === "refund-order") {
         order.refundStatus = "solicitado";
         showToast("Solicitação de reembolso enviada.");
     }
-    if (action === "rate-order") {
-        const rating = window.prompt("Avalie o pedido de 1 a 5:", "5");
-        if (rating) order.rating = Math.min(5, Math.max(1, Number(rating)));
-    }
     saveState();
     renderOrders();
+    renderHome();
+}
+
+function submitOrderReview(event) {
+    event.preventDefault();
+    const form = event.target;
+    const order = state.orders.find((item) => String(item.id) === form.dataset.orderId);
+    const rating = Number(new FormData(form).get("rating"));
+    const text = String(new FormData(form).get("text") || "").trim();
+    if (!order || Number(order.stage) < 3 || order.rating) {
+        showToast("Esta compra não está disponível para avaliação.");
+        return;
+    }
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+        showToast("Selecione uma nota de 1 a 5.");
+        return;
+    }
+    order.rating = rating;
+    order.review = text;
+    (order.items || []).forEach((item) => {
+        if (item.seller) state.reviews.push({
+            orderId: order.id,
+            productId: item.id,
+            seller: item.seller,
+            author: state.currentUser?.nome || "Comprador",
+            rating,
+            text,
+            createdAt: new Date().toISOString()
+        });
+    });
+    saveState();
+    renderOrders();
+    showToast("Avaliação publicada no perfil do vendedor.");
 }
 
 // DETALHES DO PRODUTO, VENDEDOR E CHAT
@@ -1050,15 +1304,21 @@ function renderDetails(productId) {
     const recommendedProducts = PRODUCTS
         .filter((item) => item.id !== product.id)
         .sort((first, second) => {
-            const firstMatch = first.categoria === product.categoria ? 1 : 0;
-            const secondMatch = second.categoria === product.categoria ? 1 : 0;
-            return secondMatch - firstMatch || Number(second.rating) - Number(first.rating);
+            const score = (candidate) => Number(normalizeCategory(candidate.categoria) === normalizeCategory(product.categoria)) * 3
+                + Number(candidate.tamanho === product.tamanho) * 2
+                + Number(candidate.local === product.local)
+                + Number(candidate.rating || 0) / 10;
+            return score(second) - score(first);
         })
         .slice(0, 4);
 
+    const measurements = product.measurements || {};
+    const measurementValues = [["Busto", measurements.bust], ["Cintura", measurements.waist], ["Quadril", measurements.hip], ["Comprimento", measurements.length]]
+        .filter(([, value]) => Number(value) > 0);
+    const productImages = product.images?.length ? product.images : product.image ? [product.image] : [];
     container.innerHTML = `
         <div class="details-card card">
-            <div class="details-hero">${productVisual(product, "details-photo")}</div>
+            <div class="detail-gallery">${productImages.length ? productImages.map((image, index) => `<img class="details-photo" src="${escapeHtml(image)}" alt="${escapeHtml(product.nome)} - foto ${index + 1}" loading="lazy" />`).join("") : productVisual(product, "details-photo")}</div>
             <h1>${escapeHtml(product.nome)}</h1>
             <p class="details-meta">${escapeHtml(product.categoria)} · ${escapeHtml(product.tamanho)} · ${escapeHtml(product.cor)}</p>
             <div class="price-row big">
@@ -1071,6 +1331,7 @@ function renderDetails(productId) {
                 <span>Vendedor: ${escapeHtml(product.vendedor)}</span>
                 <span>Local: ${escapeHtml(product.local)}</span>
             </div>
+            ${measurementValues.length || measurements.fit ? `<section class="fit-details"><h2>Medidas e caimento</h2>${measurementValues.length ? `<dl>${measurementValues.map(([label, value]) => `<div><dt>${label}</dt><dd>${escapeHtml(value)} cm</dd></div>`).join("")}</dl>` : ""}${measurements.fit ? `<p>${escapeHtml(measurements.fit)}</p>` : ""}<small>Compare com uma peça sua para escolher com mais segurança.</small></section>` : ""}
             <div class="btn-row">
                 <button class="btn btn-outline" data-action="view-seller" data-id="${product.id}">Ver perfil do vendedor</button>
                 <button class="btn btn-outline" data-action="toggle-favorite" data-id="${product.id}">Favoritar</button>
@@ -1090,6 +1351,7 @@ function renderSellerProfile(productId) {
     if (!container || !product) return;
 
     const sellerProducts = PRODUCTS.filter((item) => item.vendedor === product.vendedor);
+    const metrics = getSellerMetrics(product.vendedor);
     container.innerHTML = `
         <button class="btn btn-outline seller-back" data-action="back-to-details" data-id="${product.id}">
             <i class="fa-solid fa-arrow-left"></i> Voltar ao produto
@@ -1098,7 +1360,9 @@ function renderSellerProfile(productId) {
             <div class="seller-avatar">${escapeHtml(product.vendedor.charAt(0).toUpperCase())}</div>
             <h1>${escapeHtml(product.vendedor)}</h1>
             <p>${escapeHtml(product.local)}</p>
-            <div class="profile-rating">★ ${product.rating} · <span>Vendedor confiável</span></div>
+            <div class="profile-rating">★ ${metrics.rating} · <span>${metrics.completedSales} vendas concluídas</span></div>
+            <p class="seller-response">${metrics.averageResponseMinutes === null ? "Ainda sem histórico de resposta" : metrics.averageResponseMinutes < 1 ? "Responde em menos de 1 min, em média" : `Responde em média em ${metrics.averageResponseMinutes} min`}</p>
+            ${metrics.reviews.length ? `<section class="seller-reviews"><h2>Avaliações de compradores</h2>${metrics.reviews.map((review) => `<article><strong>★ ${review.rating} · ${escapeHtml(review.author || "Comprador")}</strong><p>${escapeHtml(review.text || "Compra concluída.")}</p></article>`).join("")}</section>` : `<p class="seller-response">As avaliações dos pedidos concluídos aparecerão aqui.</p>`}
             <button class="btn btn-primary" data-action="open-chat" data-id="${product.id}">
                 <i class="fa-regular fa-comments"></i> Abrir chat
             </button>
@@ -1451,7 +1715,12 @@ function finalizePurchase(event) {
         name: `${state.cart.length} item(ns)`,
         status: "processando",
         stage: 0,
-        total
+        total,
+        createdAt: new Date().toISOString(),
+        items: state.cart.map((entry) => {
+            const product = getProductById(entry.id);
+            return { id: entry.id, name: product?.nome || "Peça", qty: entry.qty, seller: product?.vendedor || "", price: product?.preco || 0 };
+        })
     };
     state.orders.unshift(order);
     addNotification("Pedido confirmado", `Seu pedido #${order.id} foi recebido e está sendo processado.`);
@@ -1608,6 +1877,10 @@ function resetPublishForm() {
     if (!editingProductId) form?.reset();
     if (preview) preview.innerHTML = "";
     if (!editingProductId) state.pendingImages = [];
+    if (!editingProductId) {
+        const quality = document.getElementById("photo-quality");
+        if (quality) quality.innerHTML = "<strong>Guia de fotos</strong><ul><li>Use um fundo simples e boa iluminação.</li><li>Inclua frente, costas e etiqueta/tamanho.</li><li>Mostre de perto qualquer detalhe ou desgaste.</li></ul>";
+    }
 }
 
 // TROCA DE TELAS E CONTROLE DOS EVENTOS DA APLICACAO
@@ -1673,6 +1946,7 @@ function showScreen(screenId, options = {}) {
 function attachEvents() {
     document.addEventListener("submit", (event) => {
         if (event.target.matches(".seller-message-form")) handleSellerMessage(event);
+        if (event.target.matches(".order-review-form")) submitOrderReview(event);
     });
 
     document.addEventListener("click", (event) => {
@@ -1712,9 +1986,27 @@ function attachEvents() {
                 filterByCategory(category);
             }
             if (action === "filter-orders") filterOrders(filter);
+            if (action === "save-search") saveCurrentSearch();
+            if (action === "apply-saved-search") applySavedSearch(id);
+            if (action === "delete-saved-search") {
+                state.savedSearches = state.savedSearches.filter((search) => search.id !== id);
+                saveState();
+                renderSavedSearches();
+            }
+            if (action === "share-wishlist") shareWishlist();
+            if (action === "open-notification-product") {
+                const notification = state.notifications.find((item) => Number(item.productId) === Number(id));
+                if (notification) {
+                    notification.read = true;
+                    saveState();
+                    updateNotificationBadge();
+                }
+                openProductDetails(id);
+            }
             if (["track-order", "advance-order", "refund-order", "rate-order"].includes(action)) {
                 handleOrderAction(action, id);
             }
+            if (action === "confirm-delivery") handleOrderAction(action, id);
         }
 
         if (!event.target.closest("#side-menu") && !event.target.closest("#btn-menu") && !event.target.closest(".side-menu-nav button")) {
@@ -1727,6 +2019,12 @@ function attachEvents() {
     });
 
     document.addEventListener("keydown", (event) => {
+        const notification = event.target.closest('.notification-item[data-action="open-notification-product"]');
+        if (notification && ["Enter", " "].includes(event.key)) {
+            event.preventDefault();
+            notification.click();
+            return;
+        }
         const card = event.target.closest(".product-card");
         if (!card || event.target !== card || !["Enter", " "].includes(event.key)) return;
 
@@ -1831,29 +2129,44 @@ function attachEvents() {
     }
 
     if (photoInput) {
-        photoInput.addEventListener("change", () => {
+        photoInput.addEventListener("change", async () => {
             const preview = document.getElementById("photo-preview");
+            const quality = document.getElementById("photo-quality");
             if (!preview) return;
             preview.innerHTML = "";
             state.pendingImages = [];
             const selectedFiles = [...photoInput.files];
+            const warnings = [];
             if (selectedFiles.length > 8) showToast("Você pode adicionar no máximo 8 fotos.");
-            selectedFiles.slice(0, 8).forEach((file) => {
-                if (!file.type.startsWith("image/")) return;
-                if (file.size > 5 * 1024 * 1024) {
-                    showToast("Cada foto deve ter no máximo 5 MB.");
-                    return;
+            const validFiles = selectedFiles.slice(0, 8).filter((file) => {
+                if (!file.type.startsWith("image/")) {
+                    warnings.push(`${file.name}: arquivo não reconhecido como imagem.`);
+                    return false;
                 }
-                const reader = new FileReader();
-                reader.addEventListener("load", () => {
-                    state.pendingImages.push(reader.result);
-                    const image = document.createElement("img");
-                    image.alt = `Pré-visualização de ${file.name}`;
-                    image.src = reader.result;
-                    preview.appendChild(image);
-                });
-                reader.readAsDataURL(file);
+                if (file.size > 5 * 1024 * 1024) {
+                    warnings.push(`${file.name}: excede o limite de 5 MB.`);
+                    return false;
+                }
+                return true;
             });
+            try {
+                const preparedImages = await Promise.all(validFiles.map(async (file) => ({ file, image: await prepareProductImage(file) })));
+                state.pendingImages = preparedImages.map(({ image }) => image.src);
+                preparedImages.forEach(({ file, image: prepared }, index) => {
+                    if (Math.min(prepared.originalWidth, prepared.originalHeight) < 700) warnings.push(`${file.name}: resolução baixa; tente uma foto com mais detalhes.`);
+                    if (prepared.smallFile) warnings.push(`${file.name}: arquivo pequeno; confira se a foto está nítida.`);
+                    if (prepared.brightness < 48) warnings.push(`${file.name}: pode estar escura; experimente usar luz natural.`);
+                    if (prepared.brightness > 232) warnings.push(`${file.name}: pode estar clara demais; confira se as cores aparecem.`);
+                    if (prepared.contrast < 12) warnings.push(`${file.name}: há pouco contraste; confira se a peça está focada e visível.`);
+                    const previewImage = document.createElement("img");
+                    previewImage.alt = `Pré-visualização ${index + 1}: ${file.name}`;
+                    previewImage.src = prepared.src;
+                    preview.appendChild(previewImage);
+                });
+                if (quality) quality.innerHTML = `<strong>${preparedImages.length} de 8 fotos selecionadas</strong><ul>${warnings.length ? warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join("") : "<li>Boa seleção. Confira frente, costas, etiqueta e detalhes da peça.</li>"}</ul>`;
+            } catch {
+                showToast("Não foi possível preparar uma das fotos. Tente outro arquivo.");
+            }
         });
     }
 
@@ -1868,6 +2181,7 @@ function attachEvents() {
             const forSale = document.getElementById("pub-venda")?.checked;
             const forTrade = document.getElementById("pub-troca")?.checked;
             const forRent = document.getElementById("pub-aluguel")?.checked;
+            const existingProduct = state.publishedProducts.find((product) => product.id === editingProductId);
             if (!name || !description || (!forSale && !forTrade && !forRent)) {
                 showToast("Preencha os dados e escolha pelo menos uma modalidade.");
                 return;
@@ -1876,9 +2190,22 @@ function attachEvents() {
                 showToast("Informe preços válidos para as modalidades escolhidas.");
                 return;
             }
+            if (!state.pendingImages.length && !existingProduct?.image && !existingProduct?.images?.length) {
+                showToast("Adicione pelo menos uma foto para apresentar o item.");
+                return;
+            }
+
+            const measurements = {
+                bust: Number(document.getElementById("pub-busto")?.value) || null,
+                waist: Number(document.getElementById("pub-cintura")?.value) || null,
+                hip: Number(document.getElementById("pub-quadril")?.value) || null,
+                length: Number(document.getElementById("pub-comprimento")?.value) || null,
+                fit: document.getElementById("pub-caimento")?.value.trim() || ""
+            };
+            const images = state.pendingImages.length ? [...state.pendingImages] : existingProduct?.images || (existingProduct?.image ? [existingProduct.image] : []);
 
             const publishedProduct = {
-                id: Date.now(),
+                id: editingProductId || Date.now(),
                 nome: name,
                 emoji: "👕",
                 categoria: normalizeCategory(document.getElementById("pub-categoria")?.value || "Camisetas"),
@@ -1894,7 +2221,9 @@ function attachEvents() {
                 rating: 5,
                 pop: 0,
                 desc: description,
-                image: state.pendingImages[0] || "",
+                image: images[0] || "",
+                images,
+                measurements,
                 stock: 1,
                 ownerEmail: normalizeEmail(state.currentUser?.email)
             };
@@ -1902,6 +2231,8 @@ function attachEvents() {
             if (existingIndex >= 0) {
                 const existing = state.publishedProducts[existingIndex];
                 if (!publishedProduct.image) publishedProduct.image = existing.image || "";
+                if (!state.pendingImages.length) publishedProduct.images = existing.images || (existing.image ? [existing.image] : []);
+                if (!Object.values(measurements).some(Boolean)) publishedProduct.measurements = existing.measurements || {};
                 Object.assign(existing, publishedProduct, { id: existing.id, stock: existing.stock });
                 const productIndex = PRODUCTS.findIndex((product) => product.id === existing.id);
                 if (productIndex >= 0) PRODUCTS[productIndex] = existing;
@@ -1911,6 +2242,7 @@ function attachEvents() {
                 state.publishedProducts.push(publishedProduct);
                 PRODUCTS.push(publishedProduct);
                 sendProductToApi(publishedProduct);
+                checkSavedSearchAlerts(publishedProduct);
                 showToast("Item publicado com sucesso!");
             }
             editingProductId = null;
@@ -1949,10 +2281,13 @@ document.addEventListener("DOMContentLoaded", () => {
     renderNotifications();
     renderMessages();
     attachEvents();
-    showScreen(window.location.hash.slice(1) || "screen-home", { replace: true });
+    const hasSharedWishlist = new URLSearchParams(window.location.search).has("wishlist");
+    if (hasSharedWishlist) renderFavorites();
+    showScreen(hasSharedWishlist ? "screen-favoritos" : window.location.hash.slice(1) || "screen-home", { replace: true });
     loadProductsFromApi().then(() => {
         const productId = productIdFromPath(window.location.pathname);
-        if (productId) openProductDetails(productId, { replace: true });
+        if (hasSharedWishlist) renderFavorites();
+        else if (productId) openProductDetails(productId, { replace: true });
     });
 
     const translationObserver = new MutationObserver(() => applyTranslations());

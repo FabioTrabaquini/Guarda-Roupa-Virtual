@@ -1,17 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-        <loc>https://seu-dominio.com.br/</loc>
+        <loc>https://example.com/</loc>
         <changefreq>daily</changefreq>
         <priority>1.0</priority>
     </url>
     <url>
-        <loc>https://seu-dominio.com.br/produto/1-camisa-social-preta</loc>
+        <loc>https://example.com/produto/1-camisa-social-preta</loc>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
-        <loc>https://seu-dominio.com.br/produto/2-calca-moletom-bench</loc>
+        <loc>https://example.com/produto/2-calca-moletom-bench</loc>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://example.com/produto/3-tenis-feminino-knw</loc>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://example.com/produto/4-tenis-masculino-air</loc>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://example.com/produto/5-casaco-jeans-oversized</loc>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://example.com/produto/6-vestido-festa-lilas</loc>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://example.com/produto/7-camiseta-basica-branca</loc>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://example.com/produto/8-calca-cargo-verde</loc>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
