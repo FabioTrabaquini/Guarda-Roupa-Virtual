@@ -942,9 +942,6 @@ function renderOrders() {
     const ordersToRender = allOrders.filter((order) => {
         const stage = order.stage ?? (order.status === "entregue" ? 3 : 1);
         if (orderFilter === "todos") return true;
-        if (orderFilter === "processando") return stage === 0;
-        if (orderFilter === "enviado") return stage === 1;
-        if (orderFilter === "recebido") return stage === 2;
         if (orderFilter === "avaliar") return stage >= 3 && !order.rating;
         if (orderFilter === "reembolso") return stage >= 2;
         return true;
