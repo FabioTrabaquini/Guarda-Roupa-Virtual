@@ -4,9 +4,13 @@ Marketplace acadêmico de compra, venda, troca e aluguel de roupas, com foco em 
 
 ## Como executar
 
-1. Instale o Node.js.
-2. Na pasta do projeto, execute `node server.js`.
+1. Instale o Node.js 18+.
+2. Na pasta do projeto, execute:
+   `npm install`
+   `npm start`
 3. Abra `http://localhost:3000` no navegador.
+
+> O projeto precisa do servidor local em `server.js` para funcionar corretamente. Se abrir só o HTML, ele pode ficar incompleto ou "desconfigurado".
 
 Conta de demonstração: `clayton@teste.com` / `123456`. Também é possível entrar como visitante.
 
