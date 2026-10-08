@@ -6,7 +6,7 @@ Marketplace acadêmico de compra, venda, troca e aluguel de roupas, com foco em 
 
 ### Opção 1 — abrir pelo terminal
 
-1. Instale o Node.js 18+.
+1. Instale o Node.js versão 18+.
 2. Abra o terminal na pasta do projeto.
 3. Execute:
    `npm install`
