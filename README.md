@@ -4,7 +4,7 @@ Marketplace acadêmico de compra, venda, troca e aluguel de roupas, com foco em 
 
 ## Como executar
 
-1. Instale o Node.js 18+.
+1. Instale o Node.js
 2. Na pasta do projeto, execute:
    `npm install`
    `npm start`
