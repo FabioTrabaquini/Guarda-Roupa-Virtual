@@ -4,11 +4,18 @@ Marketplace acadêmico de compra, venda, troca e aluguel de roupas, com foco em 
 
 ## Como executar
 
-1. Instale o Node.js
-2. Na pasta do projeto, execute:
+### Opção 1 — abrir pelo terminal
+
+1. Instale o Node.js 18+.
+2. Abra o terminal na pasta do projeto.
+3. Execute:
    `npm install`
    `npm start`
-3. Abra `http://localhost:3000` no navegador.
+4. Abra `http://localhost:3000` no navegador.
+
+### Opção 2 — pelo VS Code
+
+- Terminal > Run Task > `Start app`
 
 > O projeto precisa do servidor local em `server.js` para funcionar corretamente. Se abrir só o HTML, ele pode ficar incompleto ou "desconfigurado".
 
