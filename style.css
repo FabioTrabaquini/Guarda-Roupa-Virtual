@@ -1887,6 +1887,93 @@ body.theme-dark .product-meta span {
     }
 }
 
+@media (max-width: 767px) {
+    .app-header {
+        gap: 4px;
+        padding: 8px 10px;
+    }
+
+    .header-left,
+    .header-right {
+        gap: 4px;
+    }
+
+    .icon-btn {
+        width: 44px;
+        height: 44px;
+        flex: 0 0 44px;
+    }
+
+    .greeting {
+        font-size: 0.78rem;
+    }
+
+    .app-header-brand {
+        display: none;
+    }
+
+    .input-group input,
+    .input-group select,
+    .input-group textarea,
+    .filters-panel select,
+    .filters-panel input,
+    .search-bar input {
+        font-size: 16px;
+    }
+
+    .btn {
+        min-height: 44px;
+    }
+
+    .btn-sm {
+        min-height: 44px;
+        padding-inline: 12px;
+    }
+
+    .favorite-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+
+    .qty-control button {
+        width: 40px;
+        height: 40px;
+    }
+
+    .bottom-nav {
+        padding-right: 4px;
+        padding-left: 4px;
+    }
+
+    .nav-item {
+        min-width: 44px;
+        min-height: 44px;
+        justify-content: center;
+    }
+
+    .nav-item span {
+        font-size: 0.68rem;
+    }
+
+    .side-menu,
+    .notification-panel {
+        height: 100vh;
+        height: 100dvh;
+        padding-bottom: calc(18px + env(safe-area-inset-bottom));
+    }
+
+    .chat-messages {
+        max-height: min(45vh, 360px);
+    }
+}
+
+@media (max-width: 360px) {
+    .greeting {
+        display: none;
+    }
+}
+
 @media (max-width: 480px) {
     .input-row {
         flex-direction: column;

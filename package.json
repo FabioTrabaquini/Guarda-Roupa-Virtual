@@ -5,9 +5,13 @@
     "description": "Marketplace acadêmico de moda circular",
     "scripts": {
         "start": "node server.js",
-        "dev": "node server.js"
+        "dev": "node server.js",
+        "test": "node --test"
     },
     "engines": {
         "node": ">=18"
+    },
+    "dependencies": {
+        "sql.js": "^1.14.2"
     }
 }

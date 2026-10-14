@@ -19,15 +19,18 @@ Marketplace acadêmico de compra, venda, troca e aluguel de roupas, com foco em 
 
 > O projeto precisa do servidor local em `server.js` para funcionar corretamente. Se abrir só o HTML, ele pode ficar incompleto ou "desconfigurado".
 
-Conta de demonstração: `clayton@teste.com` / `123456`. Também é possível entrar como visitante.
+Também é possível navegar como visitante. Para publicar anúncios, crie uma conta com senha de pelo menos 8 caracteres.
+
+Contas, sessões, anúncios, estoque e pedidos são mantidos em `data/marketplace.sqlite`, criado automaticamente e ignorado pelo Git. Os produtos de `products.json` são importados como catálogo inicial. Senhas usam `scrypt`; sessões usam cookie `HttpOnly`. Contas e pedidos antigos que existiam somente no `localStorage` não são importados.
 
 ## Funcionalidades
 
 - Catálogo com busca, categorias, filtros e ordenação.
-- Favoritos, carrinho com limite de estoque e cupons.
-- Cadastro, login local e perfil.
+- Favoritos e carrinho locais; preços, cupons e estoque são conferidos pelo servidor no checkout.
+- Cadastro e login com sessão no servidor; perfil básico persistente.
 - Publicação, edição e exclusão de anúncios com imagem.
-- Checkout simulado, pedidos, avaliações, chat e suporte.
+- Pedidos de demonstração persistentes, preço/cupom validados pelo servidor, reserva transacional de estoque e cancelamento que libera as peças.
+- Chat persistente entre contas em anúncios publicados; avaliações e suporte ainda são locais ou simulados.
 - Idioma em português, inglês e espanhol e moeda em BRL, USD ou EUR.
 
 ## Demonstração
@@ -48,4 +51,4 @@ Capturas de tela do site:
 
 ## Limitações atuais
 
-Este projeto ainda é um protótipo local. Os dados de conta, pedidos e mensagens usam `localStorage`; a senha não deve ser armazenada assim em produção. O backend de produtos ainda não possui autenticação, banco de dados, pagamento real ou controle de autorização por usuário. Antes de publicar, é necessário adicionar API autenticada, hash de senhas, banco de dados, validação no servidor, armazenamento de imagens e gateway de pagamento.
+Este projeto ainda é um protótipo. O checkout cria apenas pedidos de demonstração: não cobra, não envia e não coleta cartão, CVV, CPF ou endereço. O estoque é reservado na base SQLite local e pode ser liberado cancelando o pedido. Favoritos, carrinho, avaliações e suporte continuam no navegador; o chat persiste mensagens por anúncio e participante, mas não tem notificações em tempo real. Aluguel e troca são exibidos, mas ainda não aceitam reservas ou propostas. A persistência SQLite atual é adequada ao protótipo de um único processo; produção exige infraestrutura de banco adequada, armazenamento externo de imagens, HTTPS, políticas de privacidade e provedor de pagamento com confirmação por webhook.

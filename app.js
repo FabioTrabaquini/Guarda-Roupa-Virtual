@@ -28,11 +28,11 @@ const state = {
         { id: 1, qty: 1 },
         { id: 3, qty: 1 }
     ],
-    users: [],
     orders: [],
     publishedProducts: [],
     drafts: [],
     supportMessages: [],
+    conversations: [],
     reviews: [],
     notifications: [],
     pendingImages: [],
@@ -40,6 +40,7 @@ const state = {
     settings: { language: "pt-BR", currency: "BRL", payment: "Pix", notifications: true, seller: false, theme: "light" },
     userData: {},
     currentUser: null,
+    pendingOrderKey: null,
     filters: {
         search: "",
         categoria: "",
@@ -54,7 +55,7 @@ const state = {
 };
 
 const STORAGE_KEY = "guarda-roupa-virtual-state";
-const API_BASE_URL = "http://localhost:3000/api";
+const API_BASE_URL = "/api";
 const authScreens = ["screen-login", "screen-cadastro", "screen-recuperar"];
 const appScreens = [
     "screen-home",
@@ -95,7 +96,9 @@ function activateUserData() {
             publishedProducts: key === "visitor" ? [...state.publishedProducts] : [],
             drafts: key === "visitor" ? [...state.drafts] : [],
             supportMessages: key === "visitor" ? [...state.supportMessages] : [],
-            savedSearches: key === "visitor" ? [...(state.savedSearches || [])] : []
+            savedSearches: key === "visitor" ? [...(state.savedSearches || [])] : [],
+            notifications: key === "visitor" ? [...state.notifications] : [],
+            pendingOrderKey: key === "visitor" ? state.pendingOrderKey : null
         };
     }
     const data = state.userData[key];
@@ -106,6 +109,10 @@ function activateUserData() {
     state.drafts = data.drafts || [];
     state.supportMessages = data.supportMessages || [];
     state.savedSearches = data.savedSearches || [];
+    state.notifications = data.notifications || [];
+    state.pendingOrderKey = data.pendingOrderKey || null;
+    state.conversations = [];
+    updateMessageBadge();
     state.publishedProducts.forEach((product) => {
         product.ownerEmail ||= key;
         product.stock = Number.isInteger(product.stock) ? product.stock : 1;
@@ -120,16 +127,38 @@ function persistUserData() {
         publishedProducts: state.publishedProducts,
         drafts: state.drafts,
         supportMessages: state.supportMessages,
-        savedSearches: state.savedSearches
+        savedSearches: state.savedSearches,
+        notifications: state.notifications,
+        pendingOrderKey: state.pendingOrderKey
     };
+}
+
+async function apiRequest(endpoint, options = {}) {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...options,
+        credentials: "same-origin",
+        headers: { ...(options.headers || {}), ...(options.body ? { "Content-Type": "application/json" } : {}) }
+    });
+    const data = response.status === 204 ? null : await response.json();
+    if (!response.ok) {
+        const error = new Error(data?.error || "Não foi possível concluir a solicitação.");
+        error.status = response.status;
+        throw error;
+    }
+    return data;
+}
+
+async function restoreServerSession() {
+    try {
+        return await apiRequest("/auth/me");
+    } catch {
+        return null;
+    }
 }
 
 async function loadProductsFromApi() {
     try {
-        const response = await fetch(`${API_BASE_URL}/products`);
-        if (!response.ok) throw new Error("Nao foi possivel carregar os produtos.");
-
-        const apiProducts = (await response.json()).map((product) => ({ ...product, categoria: normalizeCategory(product.categoria), stock: Number.isInteger(product.stock) ? product.stock : 1 }));
+        const apiProducts = (await apiRequest("/products")).map((product) => ({ ...product, categoria: normalizeCategory(product.categoria), stock: Number.isInteger(product.stock) ? product.stock : 1 }));
         const knownProductIds = new Set(PRODUCTS.map((product) => Number(product.id)));
         const productsById = new Map(apiProducts.map((product) => [Number(product.id), product]));
         PRODUCTS = PRODUCTS.map((product) => ({ ...product, ...(productsById.get(product.id) || {}) }));
@@ -139,6 +168,11 @@ async function loadProductsFromApi() {
             }
             if (!knownProductIds.has(Number(product.id))) checkSavedSearchAlerts(product);
         });
+        if (state.currentUser?.id) {
+            state.publishedProducts = apiProducts.filter((product) => Number(product.ownerId) === Number(state.currentUser.id));
+            saveState();
+            renderMyProducts();
+        }
         renderHome();
         renderCatalog();
         renderFavorites();
@@ -147,18 +181,21 @@ async function loadProductsFromApi() {
     }
 }
 
+async function loadOrdersFromApi() {
+    if (!state.currentUser?.id) return;
+    try {
+        state.orders = await apiRequest("/orders");
+        renderOrders();
+        saveState();
+    } catch (error) {
+        showToast(error.message);
+    }
+}
+
 // COMUNICACAO COM A API DE PRODUTOS
 async function sendProductToApi(product, method = "POST") {
-    try {
-        const endpoint = method === "PUT" ? `${API_BASE_URL}/products/${product.id}` : `${API_BASE_URL}/products`;
-        await fetch(endpoint, {
-            method,
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(product)
-        });
-    } catch {
-        showToast("Produto salvo localmente; servidor indisponivel.");
-    }
+    const endpoint = method === "PUT" ? `/products/${product.id}` : "/products";
+    return apiRequest(endpoint, { method, body: JSON.stringify(product) });
 }
 
 // PERSISTENCIA DO ESTADO NO NAVEGADOR
@@ -167,7 +204,6 @@ function saveState() {
     const savedState = {
         favorites: state.favorites,
         cart: state.cart,
-        users: state.users,
         orders: state.orders,
         publishedProducts: state.publishedProducts,
         drafts: state.drafts,
@@ -175,11 +211,11 @@ function saveState() {
         savedSearches: state.savedSearches,
         reviews: state.reviews,
         notifications: state.notifications,
-        currentUser: state.currentUser,
+        pendingOrderKey: state.pendingOrderKey,
         filters: state.filters,
         appliedCoupon: state.appliedCoupon,
-        settings: state.settings
-        , userData: state.userData
+        settings: state.settings,
+        userData: state.userData
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(savedState));
 }
@@ -190,11 +226,19 @@ function loadState() {
         if (!savedState) return;
 
         Object.assign(state, savedState);
+        state.currentUser = null;
+        state.pendingOrderKey = null;
+        state.favorites = [];
+        state.cart = [];
+        state.orders = [];
+        state.publishedProducts = [];
+        state.drafts = [];
+        state.supportMessages = [];
+        state.savedSearches = [];
+        state.notifications = [];
         state.publishedProducts = (state.publishedProducts || []).map((product) => ({ ...product, categoria: normalizeCategory(product.categoria) }));
-        PRODUCTS = [...PRODUCTS, ...state.publishedProducts];
         state.settings = { language: "pt-BR", currency: "BRL", payment: "Pix", notifications: true, seller: false, ...state.settings };
         state.userData = state.userData || {};
-        activateUserData();
         updateCurrency();
     } catch {
         localStorage.removeItem(STORAGE_KEY);
@@ -505,7 +549,7 @@ function updateSeo(screenId = "screen-home", product = null) {
         category: product.categoria,
         image: product.image && /^(https?:\/\/)/.test(product.image) ? [product.image] : undefined,
         brand: product.marca ? { "@type": "Brand", name: product.marca } : undefined,
-        offers: product.preco !== null ? {
+        offers: isForSale(product) ? {
             "@type": "Offer",
             priceCurrency: "BRL",
             price: Number(product.preco).toFixed(2),
@@ -528,6 +572,11 @@ function updateSeo(screenId = "screen-home", product = null) {
 
     const jsonLd = document.getElementById("structured-data");
     if (jsonLd) jsonLd.textContent = JSON.stringify(structuredData);
+}
+
+function isForSale(product) {
+    const price = Number(product?.preco);
+    return product?.preco !== null && product?.preco !== undefined && product?.preco !== "" && Number.isFinite(price) && price > 0;
 }
 
 function buildProductMeta(product, stock) {
@@ -561,8 +610,8 @@ function buildProductCard(product) {
                 <h3>${escapeHtml(product.nome)}</h3>
                 <p>${escapeHtml(product.local)}</p>
                 <div class="price-row">
-                    <strong>${formatPrice(product.preco)}</strong>
-                    ${product.aluguel ? `<span>${formatPrice(product.aluguel)}/dia</span>` : ""}
+                    <strong>${isForSale(product) ? formatPrice(product.preco) : product.aluguel ? `${formatPrice(product.aluguel)}/dia` : "Disponível para troca"}</strong>
+                    ${isForSale(product) && product.aluguel ? `<span>${formatPrice(product.aluguel)}/dia</span>` : ""}
                 </div>
                 <div class="product-meta">
                     ${buildProductMeta(product, stock)}
@@ -570,9 +619,7 @@ function buildProductCard(product) {
             </div>
             <div class="product-actions">
                 <button class="btn btn-outline btn-sm" data-action="details" data-id="${product.id}">Detalhes</button>
-                <button class="btn btn-primary btn-sm" data-action="add-cart" data-id="${product.id}" ${stock < 1 ? "disabled" : ""}>
-                    ${stock < 1 ? "Indisponível" : inCart ? "No carrinho" : "Adicionar"}
-                </button>
+                ${isForSale(product) ? `<button class="btn btn-primary btn-sm" data-action="add-cart" data-id="${product.id}" ${stock < 1 ? "disabled" : ""}>${stock < 1 ? "Indisponível" : inCart ? "No carrinho" : "Adicionar"}</button>` : `<span class="btn btn-outline btn-sm" aria-disabled="true">${product.aluguel ? "Aluguel em breve" : "Troca em breve"}</span>`}
                 ${isOwner ? `<button class="btn btn-ghost btn-sm" data-action="edit-product" data-id="${product.id}">Editar</button><button class="btn btn-danger btn-sm" data-action="delete-product" data-id="${product.id}">Excluir</button>` : ""}
             </div>
         </article>
@@ -618,7 +665,7 @@ function getFilteredProducts() {
         const matchesLocal = !local || String(product.local || "").toLowerCase().includes(local.toLowerCase());
 
         let matchesModalidade = true;
-        if (modalidade === "venda") matchesModalidade = product.preco !== null;
+        if (modalidade === "venda") matchesModalidade = isForSale(product);
         if (modalidade === "aluguel") matchesModalidade = !!product.aluguel;
         if (modalidade === "troca") matchesModalidade = !!product.troca;
 
@@ -770,9 +817,9 @@ function productMatchesSearchFilters(product, filters) {
         && (!filters.tamanho || product.tamanho === filters.tamanho)
         && (!filters.estado || product.estado === filters.estado)
         && (!filters.local || String(product.local || "").toLowerCase().includes(filters.local.toLowerCase()))
-        && (!filters.precoMin || product.preco !== null && Number(product.preco) >= Number(filters.precoMin))
-        && (!filters.precoMax || product.preco !== null && Number(product.preco) <= Number(filters.precoMax))
-        && (!filters.modalidade || filters.modalidade === "venda" && product.preco !== null || filters.modalidade === "aluguel" && !!product.aluguel || filters.modalidade === "troca" && !!product.troca);
+        && (!filters.precoMin || isForSale(product) && Number(product.preco) >= Number(filters.precoMin))
+        && (!filters.precoMax || isForSale(product) && Number(product.preco) <= Number(filters.precoMax))
+        && (!filters.modalidade || filters.modalidade === "venda" && isForSale(product) || filters.modalidade === "aluguel" && !!product.aluguel || filters.modalidade === "troca" && !!product.troca);
 }
 
 function renderFavorites() {
@@ -807,21 +854,14 @@ async function shareWishlist() {
 function getSellerMetrics(sellerName) {
     const sellerProducts = PRODUCTS.filter((product) => product.vendedor === sellerName);
     const sellerReviews = (state.reviews || []).filter((review) => review.seller === sellerName);
-    const ratings = sellerReviews.length ? sellerReviews.map((review) => Number(review.rating)) : sellerProducts.map((product) => Number(product.rating));
+    const ratings = sellerReviews.map((review) => Number(review.rating));
     const completedSales = getAllLocalOrders().reduce((total, order) => {
         if (Number(order.stage) < 3 && order.status !== "entregue") return total;
         return total + (order.items || []).filter((item) => item.seller === sellerName).reduce((quantity, item) => quantity + Number(item.qty || 1), 0);
     }, 0);
-    const allMessages = [...new Map([...Object.values(state.userData || {}).flatMap((userData) => userData.supportMessages || []), ...state.supportMessages].map((message) => [`${message.seller}:${message.productId}:${message.createdAt}:${message.message}`, message])).values()];
-    const responseDurations = allMessages.filter((message) => message.seller === sellerName && !message.sender).flatMap((message) => {
-        const reply = allMessages.find((candidate) => candidate.sender === "seller" && candidate.seller === sellerName && Number(candidate.productId) === Number(message.productId) && new Date(candidate.createdAt) >= new Date(message.createdAt));
-        return reply ? [new Date(reply.createdAt) - new Date(message.createdAt)] : [];
-    });
-    const averageResponseMinutes = responseDurations.length ? Math.round(responseDurations.reduce((sum, duration) => sum + duration, 0) / responseDurations.length / 60000) : null;
     return {
-        rating: ratings.length ? (ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length).toFixed(1) : "Novo",
+        rating: ratings.length ? (ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length).toFixed(1) : null,
         completedSales,
-        averageResponseMinutes,
         reviews: sellerReviews.sort((first, second) => new Date(second.createdAt) - new Date(first.createdAt)).slice(0, 3)
     };
 }
@@ -837,17 +877,23 @@ function renderMyProducts() {
 }
 
 // GERENCIAMENTO DOS PRODUTOS PUBLICADOS PELO USUARIO
-function deleteProduct(productId) {
+async function deleteProduct(productId) {
     const id = Number(productId);
     const product = state.publishedProducts.find((item) => item.id === id);
     if (!product || product.ownerEmail !== normalizeEmail(state.currentUser?.email)) return;
     if (!window.confirm(`Excluir "${product.nome}"?`)) return;
 
+    try {
+        await apiRequest(`/products/${id}`, { method: "DELETE" });
+    } catch (error) {
+        showToast(error.message);
+        return;
+    }
+
     state.publishedProducts = state.publishedProducts.filter((item) => item.id !== id);
     PRODUCTS = PRODUCTS.filter((item) => item.id !== id);
     state.cart = state.cart.filter((item) => item.id !== id);
     state.favorites = state.favorites.filter((item) => item !== id);
-    fetch(`${API_BASE_URL}/products/${id}`, { method: "DELETE" }).catch(() => { });
     saveState();
     renderHome();
     renderCatalog();
@@ -892,7 +938,7 @@ function startEditProduct(productId) {
 function getCartSubtotal() {
     return state.cart.reduce((sum, entry) => {
         const product = getProductById(entry.id);
-        return sum + (product ? product.preco * entry.qty : 0);
+        return sum + (product && isForSale(product) ? product.preco * entry.qty : 0);
     }, 0);
 }
 
@@ -935,45 +981,25 @@ function renderOrders() {
     const orders = document.getElementById("orders-list");
     if (!orders) return;
 
-    const allOrders = state.orders.length ? state.orders : [
-        { id: "1042", name: "Camisa Social Preta", status: "em transporte", total: 59.99 },
-        { id: "1038", name: "Calça Moletom Bench", status: "entregue", total: 89.90 }
-    ];
+    const allOrders = state.orders;
     const ordersToRender = allOrders.filter((order) => {
-        const stage = order.stage ?? (order.status === "entregue" ? 3 : 1);
         if (orderFilter === "todos") return true;
-        if (orderFilter === "avaliar") return stage >= 3 && !order.rating;
-        if (orderFilter === "reembolso") return stage >= 2;
+        if (orderFilter === "ativos") return order.status !== "cancelado";
+        if (orderFilter === "cancelados") return order.status === "cancelado";
         return true;
     });
 
     orders.innerHTML = ordersToRender.length ? ordersToRender.map((order) => {
-        const stage = order.stage ?? (order.status === "entregue" ? 3 : order.status === "em transporte" ? 1 : 0);
-        const stages = ["Processando", "Enviado", "A caminho", "Concluído"];
+        const isDemo = order.status === "demonstracao";
+        const isCancelled = order.status === "cancelado";
+        const status = isDemo ? "Demonstração (sem pagamento)" : isCancelled ? "Cancelado" : order.status;
         return `
         <div class="card order-card">
             <h3>Pedido #${escapeHtml(order.id)}</h3>
-            <p>${escapeHtml(order.items?.map((item) => item.name).join(", ") || order.name)} · Status: ${escapeHtml(order.status)}</p>
+            <p>${escapeHtml(order.items?.map((item) => item.name).join(", ") || order.name)} · Status: ${escapeHtml(status)}</p>
             <strong>${formatPrice(order.total)}</strong>
-            <ol class="order-tracking" aria-label="Etapas do pedido">
-                ${stages.map((label, index) => `<li class="${stage >= index ? "complete" : ""}"><span>${index + 1}</span>${label}</li>`).join("")}
-            </ol>
-            <div class="order-actions">
-                <button class="btn btn-outline btn-sm" data-action="track-order" data-id="${escapeHtml(order.id)}">Rastrear pedido</button>
-                ${state.orders.includes(order) && stage === 0 ? `<button class="btn btn-outline btn-sm" data-action="advance-order" data-id="${escapeHtml(order.id)}">Simular envio</button>` : ""}
-                ${state.orders.includes(order) && stage === 1 ? `<button class="btn btn-outline btn-sm" data-action="advance-order" data-id="${escapeHtml(order.id)}">Marcar a caminho</button>` : ""}
-                ${state.orders.includes(order) && stage === 2 ? `<button class="btn btn-primary btn-sm" data-action="confirm-delivery" data-id="${escapeHtml(order.id)}">Confirmar recebimento</button>` : ""}
-            </div>
-            ${state.orders.includes(order) && stage === 3 && !order.rating ? `
-                <form class="order-review-form" data-order-id="${escapeHtml(order.id)}">
-                    <h4>Avalie sua compra</h4>
-                    <div class="input-row">
-                        <div class="input-group"><label for="review-rating-${escapeHtml(order.id)}">Sua nota</label><select id="review-rating-${escapeHtml(order.id)}" name="rating" required><option value="">Selecione de 1 a 5</option><option value="5">★★★★★ · 5, excelente</option><option value="4">★★★★ · 4, muito boa</option><option value="3">★★★ · 3, boa</option><option value="2">★★ · 2, abaixo do esperado</option><option value="1">★ · 1, ruim</option></select></div>
-                        <div class="input-group"><label for="review-text-${escapeHtml(order.id)}">Comentário (opcional)</label><textarea id="review-text-${escapeHtml(order.id)}" name="text" rows="2" maxlength="400" placeholder="Como foi a experiência com a peça e o vendedor?"></textarea></div>
-                    </div>
-                    <button class="btn btn-outline btn-sm" type="submit">Publicar avaliação</button>
-                </form>
-            ` : order.rating ? `<p class="order-review-saved">Sua avaliação: ${"★".repeat(Number(order.rating))}${"☆".repeat(5 - Number(order.rating))}</p>` : ""}
+            ${isDemo ? `<p class="page-intro">Nenhuma cobrança ou envio foi feito. O estoque fica reservado apenas nesta demonstração.</p><div class="order-actions"><button class="btn btn-outline btn-sm" data-action="cancel-demo-order" data-id="${escapeHtml(order.id)}">Cancelar e liberar estoque</button></div>` : ""}
+            ${isCancelled ? '<p class="page-intro">A reserva foi cancelada e o estoque foi liberado.</p>' : ""}
         </div>
     `;
     }).join("") : `<p class="empty-state">Nenhum pedido nesta categoria.</p>`;
@@ -1016,6 +1042,8 @@ function renderProfile() {
 function renderCart() {
     const container = document.getElementById("cart-content");
     if (!container) return;
+
+    state.cart = state.cart.filter((entry) => isForSale(getProductById(entry.id)));
 
     if (!state.cart.length) {
         container.innerHTML = "<p class='empty-state'>Seu carrinho está vazio.</p>";
@@ -1083,37 +1111,21 @@ function renderCheckout() {
 
     container.innerHTML = `
         <form class="card checkout-card" id="checkout-form">
+            <p class="page-intro">Demonstração: nenhum pagamento ou envio real será realizado. O estoque será reservado localmente até o cancelamento.</p>
             <h3>Resumo do pedido</h3>
             <div class="summary-row"><span>Itens</span><strong>${state.cart.reduce((sum, item) => sum + item.qty, 0)}</strong></div>
-            <div class="summary-row"><span>Entrega</span><strong>Em 2 a 4 dias</strong></div>
             <div class="summary-row total"><span>Total</span><strong>${formatPrice(total)}</strong></div>
-            <div class="checkout-address"><strong>Entrega para</strong><span>${escapeHtml(state.currentUser?.endereco || "")}, ${escapeHtml(state.currentUser?.cidade || "")}</span></div>
-            <div class="input-group"><label for="checkout-payment">Forma de pagamento</label><select id="checkout-payment" required><option value="">Selecione</option><option ${state.settings.payment === "Pix" ? "selected" : ""}>Pix (simulação)</option><option ${state.settings.payment === "Cartão" ? "selected" : ""}>Cartão (simulação)</option><option ${state.settings.payment === "Boleto" ? "selected" : ""}>Boleto (simulação)</option></select></div>
-            <button class="btn btn-primary btn-full" type="submit">Confirmar pagamento</button>
+            <button class="btn btn-primary btn-full" type="submit">Registrar pedido de demonstração</button>
         </form>
     `;
     document.getElementById("checkout-form")?.addEventListener("submit", finalizePurchase);
-}
-
-function hasDeliveryData() {
-    const user = state.currentUser;
-    return [user?.nome, user?.cpf, user?.telefone, user?.cep, user?.rua, user?.numero, user?.bairro, user?.cidade, user?.uf]
-        .every((value) => typeof value === "string" && value.trim().length > 0);
 }
 
 function fillPersonalDataForm() {
     const user = state.currentUser || {};
     const values = {
         "dados-nome": user.nome || "",
-        "dados-cpf": user.cpf || "",
-        "dados-telefone": user.telefone || "",
-        "dados-cep": user.cep || "",
-        "dados-rua": user.rua || "",
-        "dados-numero": user.numero || "",
-        "dados-bairro": user.bairro || "",
-        "dados-cidade": user.cidade || "",
-        "dados-uf": user.uf || "",
-        "dados-complemento": user.complemento || ""
+        "dados-cidade": user.cidade || ""
     };
 
     Object.entries(values).forEach(([id, value]) => {
@@ -1128,13 +1140,9 @@ function startCheckout() {
         return;
     }
 
-    if (!state.currentUser) {
-        state.currentUser = { nome: "Visitante" };
-    }
-
-    if (!hasDeliveryData()) {
-        fillPersonalDataForm();
-        showScreen("screen-dados");
+    if (!state.currentUser?.id) {
+        showToast("Entre em uma conta para registrar o pedido.");
+        showScreen("screen-login");
         return;
     }
 
@@ -1142,43 +1150,33 @@ function startCheckout() {
     showScreen("screen-checkout");
 }
 
-function handlePersonalData(event) {
+async function handlePersonalData(event) {
     event.preventDefault();
     const user = state.currentUser || {};
     user.nome = document.getElementById("dados-nome")?.value.trim();
-    user.cpf = document.getElementById("dados-cpf")?.value.trim();
-    user.telefone = document.getElementById("dados-telefone")?.value.trim();
-    user.cep = document.getElementById("dados-cep")?.value.trim();
-    user.rua = document.getElementById("dados-rua")?.value.trim();
-    user.numero = document.getElementById("dados-numero")?.value.trim();
-    user.bairro = document.getElementById("dados-bairro")?.value.trim();
     user.cidade = document.getElementById("dados-cidade")?.value.trim();
-    user.uf = document.getElementById("dados-uf")?.value.trim().toUpperCase();
-    user.complemento = document.getElementById("dados-complemento")?.value.trim();
-    const cardEnabled = document.getElementById("dados-cadastrar-cartao")?.checked;
-    const cardNumber = document.getElementById("dados-cartao-numero")?.value.replace(/\D/g, "");
-
-    if (!hasDeliveryData()) {
-        showToast("Preencha todos os dados obrigatórios.");
+    if (!user.nome || !user.cidade) {
+        showToast("Informe seu nome e cidade.");
         return;
     }
 
-    if (cardEnabled && (!cardNumber || !document.getElementById("dados-cartao-nome")?.value.trim() || !document.getElementById("dados-cartao-validade")?.value.trim() || !document.getElementById("dados-cartao-cvv")?.value.trim())) {
-        showToast("Preencha todos os dados do cartão ou desmarque a opção.");
-        return;
+    if (state.currentUser?.id) {
+        try {
+            const account = await apiRequest("/auth/profile", {
+                method: "PATCH",
+                body: JSON.stringify({ nome: user.nome, cidade: user.cidade })
+            });
+            Object.assign(user, account);
+        } catch (error) {
+            showToast(error.message);
+            return;
+        }
     }
-
-    user.endereco = `${user.rua}, ${user.numero} - ${user.bairro}`;
-    user.cartao = cardEnabled ? { last4: cardNumber.slice(-4), nome: document.getElementById("dados-cartao-nome").value.trim(), validade: document.getElementById("dados-cartao-validade").value.trim() } : null;
-
     state.currentUser = user;
-    const savedUser = state.users.find((item) => item.email === user.email);
-    if (savedUser) Object.assign(savedUser, user);
     saveState();
     applyLoggedUser();
     renderProfile();
-    renderCheckout();
-    showScreen("screen-checkout");
+    showScreen("screen-perfil");
 }
 
 function fillSettingsForm() {
@@ -1221,35 +1219,22 @@ function handleSettings(event) {
     showToast("Configurações salvas!");
 }
 
-function handleOrderAction(action, orderId) {
-    const order = state.orders.find((item) => String(item.id) === String(orderId));
-    if (!order) {
-        showToast(action === "track-order" ? "Pedido em transporte. Código de rastreio: GV" + orderId : "Ação disponível para pedidos reais.");
+async function handleOrderAction(action, orderId) {
+    if (action !== "cancel-demo-order") {
+        showToast("Rastreio e entrega ficam indisponíveis enquanto o pedido for uma demonstração.");
         return;
     }
-    if (action === "track-order") showToast(`Pedido ${order.id}: ${order.status}. Código de demonstração GV${order.id}.`);
-    if (action === "advance-order") {
-        order.stage = Math.min(2, (order.stage ?? 0) + 1);
-        order.status = ["processando", "enviado", "a caminho"][order.stage];
-        showToast(`Pedido atualizado: ${order.status}.`);
+    try {
+        const order = await apiRequest(`/orders/${encodeURIComponent(orderId)}/cancel`, { method: "PATCH" });
+        state.orders = state.orders.map((item) => String(item.id) === String(orderId) ? order : item);
+        await loadProductsFromApi();
+        saveState();
+        renderOrders();
+        renderHome();
+        showToast("Pedido cancelado. O estoque foi liberado.");
+    } catch (error) {
+        showToast(error.message);
     }
-    if (action === "confirm-delivery") {
-        if (Number(order.stage) !== 2) {
-            showToast("Confirme o recebimento quando o pedido estiver a caminho.");
-            return;
-        }
-        order.stage = 3;
-        order.status = "entregue";
-        order.deliveredAt = new Date().toISOString();
-        showToast("Recebimento confirmado. Obrigado por circular essa peça!");
-    }
-    if (action === "refund-order") {
-        order.refundStatus = "solicitado";
-        showToast("Solicitação de reembolso enviada.");
-    }
-    saveState();
-    renderOrders();
-    renderHome();
 }
 
 function submitOrderReview(event) {
@@ -1319,8 +1304,8 @@ function renderDetails(productId) {
             <h1>${escapeHtml(product.nome)}</h1>
             <p class="details-meta">${escapeHtml(product.categoria)} · ${escapeHtml(product.tamanho)} · ${escapeHtml(product.cor)}</p>
             <div class="price-row big">
-                <strong>${formatPrice(product.preco)}</strong>
-                ${product.aluguel ? `<span>${formatPrice(product.aluguel)}/dia</span>` : ""}
+                <strong>${isForSale(product) ? formatPrice(product.preco) : product.aluguel ? `${formatPrice(product.aluguel)}/dia` : "Disponível para troca"}</strong>
+                ${isForSale(product) && product.aluguel ? `<span>${formatPrice(product.aluguel)}/dia</span>` : ""}
             </div>
             <p>${escapeHtml(product.desc)}</p>
             <div class="details-info">
@@ -1332,7 +1317,7 @@ function renderDetails(productId) {
             <div class="btn-row">
                 <button class="btn btn-outline" data-action="view-seller" data-id="${product.id}">Ver perfil do vendedor</button>
                 <button class="btn btn-outline" data-action="toggle-favorite" data-id="${product.id}">Favoritar</button>
-                <button class="btn btn-primary" data-action="add-cart" data-id="${product.id}">Adicionar ao carrinho</button>
+                ${isForSale(product) ? `<button class="btn btn-primary" data-action="add-cart" data-id="${product.id}">Adicionar ao carrinho</button>` : `<p class="page-intro">${product.aluguel ? "Reservas de aluguel ainda não estão disponíveis." : "Propostas de troca ainda não estão disponíveis."}</p>`}
             </div>
         </div>
         <section class="recommendations">
@@ -1357,12 +1342,10 @@ function renderSellerProfile(productId) {
             <div class="seller-avatar">${escapeHtml(product.vendedor.charAt(0).toUpperCase())}</div>
             <h1>${escapeHtml(product.vendedor)}</h1>
             <p>${escapeHtml(product.local)}</p>
-            <div class="profile-rating">★ ${metrics.rating} · <span>${metrics.completedSales} vendas concluídas</span></div>
-            <p class="seller-response">${metrics.averageResponseMinutes === null ? "Ainda sem histórico de resposta" : metrics.averageResponseMinutes < 1 ? "Responde em menos de 1 min, em média" : `Responde em média em ${metrics.averageResponseMinutes} min`}</p>
+            <div class="profile-rating">${metrics.rating ? `★ ${metrics.rating}` : "Sem avaliações verificadas"} · <span>${metrics.completedSales} vendas concluídas</span></div>
+            <p class="seller-response">Mensagens enviadas por este chat ficam ligadas ao anúncio.</p>
             ${metrics.reviews.length ? `<section class="seller-reviews"><h2>Avaliações de compradores</h2>${metrics.reviews.map((review) => `<article><strong>★ ${review.rating} · ${escapeHtml(review.author || "Comprador")}</strong><p>${escapeHtml(review.text || "Compra concluída.")}</p></article>`).join("")}</section>` : `<p class="seller-response">As avaliações dos pedidos concluídos aparecerão aqui.</p>`}
-            <button class="btn btn-primary" data-action="open-chat" data-id="${product.id}">
-                <i class="fa-regular fa-comments"></i> Abrir chat
-            </button>
+            ${product.ownerId && Number(product.ownerId) !== Number(state.currentUser?.id) ? `<button class="btn btn-primary" data-action="open-chat" data-id="${product.id}" data-user-id="${product.ownerId}"><i class="fa-regular fa-comments"></i> Abrir chat</button>` : `<p class="seller-response">${product.ownerId ? "Veja as conversas recebidas na área de mensagens." : "Chat indisponível para este anúncio de demonstração."}</p>`}
         </section>
         <section class="recommendations">
             <h2 class="page-title">Produtos deste vendedor</h2>
@@ -1371,48 +1354,56 @@ function renderSellerProfile(productId) {
     `;
 }
 
-function renderChat(productId) {
+async function renderChat(productId, otherUserId) {
     const container = document.getElementById("chat-content");
     const product = getProductById(productId);
     if (!container || !product) return;
-
-    const conversationProductId = Number(productId);
-    const isConversationNotification = (notification) => {
-        const isMessage = notification.type === "message" || notification.title?.startsWith("Nova mensagem de ");
-        return isMessage && (
-            Number(notification.productId) === conversationProductId ||
-            (!notification.productId && notification.title === `Nova mensagem de ${product.vendedor}`)
-        );
-    };
-    const hadMessageNotification = state.notifications.some(isConversationNotification);
-    if (hadMessageNotification) {
-        state.notifications = state.notifications.filter((notification) => !isConversationNotification(notification));
-        saveState();
-        renderNotifications();
+    if (!state.currentUser?.id) {
+        showToast("Entre em uma conta para acessar as mensagens.");
+        showScreen("screen-login");
+        return;
+    }
+    if (!product.ownerId) {
+        container.innerHTML = '<p class="empty-state">Chat indisponível para este anúncio de demonstração.</p>';
+        return;
     }
 
-    const messages = state.supportMessages.filter((item) => item.seller === product.vendedor && Number(item.productId) === conversationProductId);
+    const isSeller = Number(product.ownerId) === Number(state.currentUser.id);
+    const conversationUserId = Number(otherUserId || (isSeller ? 0 : product.ownerId));
+    if (!conversationUserId) {
+        container.innerHTML = '<p class="empty-state">Abra uma conversa recebida para responder ao comprador.</p>';
+        return;
+    }
+    let messages;
+    try {
+        messages = await apiRequest(`/messages?productId=${encodeURIComponent(product.id)}&otherUserId=${conversationUserId}`);
+    } catch (error) {
+        container.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`;
+        return;
+    }
+    const conversation = state.conversations.find((item) => Number(item.productId) === Number(product.id) && Number(item.otherUserId) === conversationUserId);
+    const conversationName = isSeller ? conversation?.otherName || "Comprador" : product.vendedor;
     container.innerHTML = `
         <button class="btn btn-outline chat-back" data-action="back-to-seller" data-id="${product.id}">
             <i class="fa-solid fa-arrow-left"></i> Voltar ao perfil
         </button>
         <section class="chat-window card">
             <header class="chat-header">
-                <div class="seller-avatar">${escapeHtml(product.vendedor.charAt(0).toUpperCase())}</div>
+                <div class="seller-avatar">${escapeHtml(conversationName.charAt(0).toUpperCase())}</div>
                 <div>
-                    <h1>Chat com ${escapeHtml(product.vendedor)}</h1>
+                    <h1>Chat com ${escapeHtml(conversationName)}</h1>
                     <p>Sobre: ${escapeHtml(product.nome)}</p>
                 </div>
             </header>
             <div class="chat-messages">
                 ${messages.length ? messages.map((item) => `
-                    <div class="chat-bubble ${item.sender === "seller" ? "seller" : "buyer"}">
-                        <p>${escapeHtml(item.message)}</p>
-                        <small>${item.sender === "seller" ? "Vendedor" : "Você"}</small>
+                    <div class="chat-bubble ${Number(item.sender_id) === Number(state.currentUser.id) ? "buyer" : "seller"}">
+                        <p>${escapeHtml(item.body)}</p>
+                        <small>${Number(item.sender_id) === Number(state.currentUser.id) ? "Você" : escapeHtml(item.sender_name)}</small>
                     </div>
                 `).join("") : '<p class="empty-state">Nenhuma mensagem ainda. Inicie a conversa.</p>'}
             </div>
-            <form class="seller-message-form" data-seller="${escapeHtml(product.vendedor)}" data-product-id="${product.id}">
+            <form class="seller-message-form" data-product-id="${product.id}" data-user-id="${conversationUserId}">
                 <div class="input-group">
                     <label for="seller-message">Mensagem</label>
                     <textarea id="seller-message" rows="3" required placeholder="Digite sua mensagem..."></textarea>
@@ -1423,40 +1414,37 @@ function renderChat(productId) {
     `;
 }
 
-function getConversations() {
-    const conversations = new Map();
-    state.supportMessages.filter((message) => message.seller && message.productId).forEach((message) => {
-        const key = `${message.seller}:${message.productId}`;
-        const current = conversations.get(key);
-        if (!current || new Date(message.createdAt) > new Date(current.createdAt)) {
-            conversations.set(key, message);
-        }
-    });
-    return [...conversations.values()].sort((first, second) => new Date(second.createdAt) - new Date(first.createdAt));
-}
-
 function updateMessageBadge() {
     const badge = document.getElementById("message-count");
     if (!badge) return;
-    const total = getConversations().length;
+    const total = state.conversations.length;
     badge.textContent = String(total);
     badge.classList.toggle("hidden", total < 1);
 }
 
-function renderMessages() {
+async function renderMessages() {
     const container = document.getElementById("messages-list");
     if (!container) return;
-
-    const conversations = getConversations();
-    container.innerHTML = conversations.length ? conversations.map((message) => {
-        const product = getProductById(message.productId);
+    if (!state.currentUser?.id) {
+        state.conversations = [];
+        container.innerHTML = '<p class="empty-state">Entre em uma conta para ver suas conversas.</p>';
+        updateMessageBadge();
+        return;
+    }
+    try {
+        state.conversations = await apiRequest("/conversations");
+    } catch (error) {
+        container.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`;
+        return;
+    }
+    container.innerHTML = state.conversations.length ? state.conversations.map((conversation) => {
         return `
-            <button class="message-conversation" data-action="open-chat" data-id="${message.productId}">
-                <span class="seller-avatar">${escapeHtml(message.seller.charAt(0).toUpperCase())}</span>
+            <button class="message-conversation" data-action="open-chat" data-id="${conversation.productId}" data-user-id="${conversation.otherUserId}">
+                <span class="seller-avatar">${escapeHtml(conversation.otherName.charAt(0).toUpperCase())}</span>
                 <span class="message-conversation-body">
-                    <strong>${escapeHtml(message.seller)}</strong>
-                    <small>${escapeHtml(product?.nome || "Produto indisponível")}</small>
-                    <span>${escapeHtml(message.message)}</span>
+                    <strong>${escapeHtml(conversation.otherName)}</strong>
+                    <small>${escapeHtml(conversation.productName)}</small>
+                    <span>${escapeHtml(conversation.message)}</span>
                 </span>
                 <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
             </button>
@@ -1465,45 +1453,26 @@ function renderMessages() {
     updateMessageBadge();
 }
 
-function handleSellerMessage(event) {
+async function handleSellerMessage(event) {
     event.preventDefault();
     const form = event.target;
     const message = form.querySelector("textarea")?.value.trim();
     if (!message) return;
-
-    state.supportMessages.push({
-        subject: `Mensagem para ${form.dataset.seller}`,
-        message,
-        seller: form.dataset.seller,
-        productId: Number(form.dataset.productId),
-        createdAt: new Date().toISOString()
-    });
-    saveState();
+    const productId = Number(form.dataset.productId);
+    const otherUserId = Number(form.dataset.userId);
+    try {
+        await apiRequest("/messages", {
+            method: "POST",
+            body: JSON.stringify({ productId, otherUserId, message })
+        });
+    } catch (error) {
+        showToast(error.message);
+        return;
+    }
     form.reset();
-    renderChat(form.dataset.productId);
-    renderMessages();
-    showToast("Mensagem enviada para o vendedor!");
-
-    window.setTimeout(() => {
-        const sellerReply = {
-            subject: `Resposta de ${form.dataset.seller}`,
-            message: "Oi! Recebi sua mensagem. Vou responder assim que possível.",
-            seller: form.dataset.seller,
-            productId: Number(form.dataset.productId),
-            sender: "seller",
-            createdAt: new Date().toISOString()
-        };
-        state.supportMessages.push(sellerReply);
-        addNotification(
-            `Nova mensagem de ${form.dataset.seller}`,
-            "O vendedor respondeu no chat.",
-            { type: "message", seller: form.dataset.seller, productId: Number(form.dataset.productId) }
-        );
-        if (document.getElementById("screen-chat")?.classList.contains("active")) {
-            renderChat(form.dataset.productId);
-        }
-        renderMessages();
-    }, 1500);
+    await renderMessages();
+    await renderChat(productId, otherUserId);
+    showToast("Mensagem enviada ao outro participante.");
 }
 
 // NAVEGACAO, MENU, FILTROS E BUSCA
@@ -1642,7 +1611,11 @@ function toggleFavorite(productId) {
 function addToCart(productId) {
     const id = Number(productId);
     const product = getProductById(id);
-    if (!product || Number(product.stock || 0) < 1) {
+    if (!product || !isForSale(product)) {
+        showToast("Este anúncio não está disponível para venda.");
+        return;
+    }
+    if (Number(product.stock || 0) < 1) {
         showToast("Esta peça não está disponível.");
         return;
     }
@@ -1691,44 +1664,53 @@ function changeQty(productId, direction) {
     saveState();
 }
 
-function finalizePurchase(event) {
+async function finalizePurchase(event) {
     event?.preventDefault();
     if (!state.cart.length) {
         showToast("Seu carrinho está vazio.");
         return;
     }
+    if (!state.currentUser?.id) {
+        showToast("Entre em uma conta para registrar o pedido.");
+        showScreen("screen-login");
+        return;
+    }
 
-    const subtotal = state.cart.reduce((sum, entry) => {
-        const product = getProductById(entry.id);
-        return sum + (product ? product.preco * entry.qty : 0);
-    }, 0);
-    const total = subtotal - getCouponDiscount(subtotal);
-    state.cart.forEach((entry) => {
-        const product = getProductById(entry.id);
-        if (product) product.stock = Math.max(0, Number(product.stock || 1) - entry.qty);
-    });
-    const order = {
-        id: String(Date.now()).slice(-6),
-        name: `${state.cart.length} item(ns)`,
-        status: "processando",
-        stage: 0,
-        total,
-        createdAt: new Date().toISOString(),
-        items: state.cart.map((entry) => {
-            const product = getProductById(entry.id);
-            return { id: entry.id, name: product?.nome || "Peça", qty: entry.qty, seller: product?.vendedor || "", price: product?.preco || 0 };
-        })
-    };
+    state.pendingOrderKey ||= window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    saveState();
+    let order;
+    try {
+        order = await apiRequest("/orders", {
+            method: "POST",
+            headers: { "Idempotency-Key": state.pendingOrderKey },
+            body: JSON.stringify({
+                items: state.cart.map((item) => ({ productId: item.id, qty: item.qty })),
+                couponCode: state.appliedCoupon
+            })
+        });
+    } catch (error) {
+        showToast(error.message);
+        if (error.status === 409) {
+            await loadProductsFromApi();
+            renderCart();
+        }
+        if (error.status === 401) showScreen("screen-login");
+        return;
+    }
+
     state.orders.unshift(order);
-    addNotification("Pedido confirmado", `Seu pedido #${order.id} foi recebido e está sendo processado.`);
     state.cart = [];
+    state.appliedCoupon = null;
+    state.pendingOrderKey = null;
     updateCartBadge();
     renderCart();
     renderCheckout();
-    renderOrders();
+    await loadProductsFromApi();
+    await loadOrdersFromApi();
+    addNotification("Pedido de demonstração", `O pedido #${order.id} foi salvo no servidor; nenhum pagamento ou envio foi realizado.`);
     saveState();
-    showScreen("screen-home");
-    showToast("Pedido confirmado com sucesso!");
+    showScreen("screen-pedidos");
+    showToast("Pedido de demonstração salvo. Nenhum pagamento foi realizado.");
 }
 
 // LOGIN, CADASTRO, RECUPERACAO E SAIDA
@@ -1747,7 +1729,7 @@ function loginDemo() {
     showScreen("screen-home");
 }
 
-function handleLogin(event) {
+async function handleLogin(event) {
     event.preventDefault();
     const emailInput = document.getElementById("login-email");
     const senhaInput = document.getElementById("login-senha");
@@ -1763,13 +1745,17 @@ function handleLogin(event) {
         return;
     }
 
-    const user = state.users.find((item) => normalizeEmail(item.email) === email && item.senha === senha);
-
-    if (!user) {
-        setLoginError("E-mail ou senha está errada.");
-        showToast("E-mail ou senha está errada.");
-        if (emailInput) emailInput.setCustomValidity("E-mail ou senha está errada.");
-        if (senhaInput) senhaInput.setCustomValidity("E-mail ou senha está errada.");
+    let user;
+    try {
+        user = await apiRequest("/auth/login", {
+            method: "POST",
+            body: JSON.stringify({ email, senha })
+        });
+    } catch (error) {
+        setLoginError(error.message);
+        showToast(error.message);
+        if (emailInput) emailInput.setCustomValidity(error.message);
+        if (senhaInput) senhaInput.setCustomValidity(error.message);
         return;
     }
 
@@ -1778,6 +1764,8 @@ function handleLogin(event) {
     setLoginError("");
     state.currentUser = user;
     activateUserData();
+    await loadOrdersFromApi();
+    await renderMessages();
     saveState();
     applyLoggedUser();
     renderProfile();
@@ -1785,7 +1773,7 @@ function handleLogin(event) {
     showToast("Login realizado com sucesso!");
 }
 
-function handleCadastro(event) {
+async function handleCadastro(event) {
     event.preventDefault();
     const nome = document.getElementById("cad-nome")?.value.trim();
     const email = normalizeEmail(document.getElementById("cad-email")?.value);
@@ -1798,8 +1786,8 @@ function handleCadastro(event) {
         return;
     }
 
-    if (senha.length < 6) {
-        showToast("A senha deve ter pelo menos 6 caracteres.");
+    if (senha.length < 8) {
+        showToast("A senha deve ter pelo menos 8 caracteres.");
         return;
     }
 
@@ -1808,26 +1796,25 @@ function handleCadastro(event) {
         return;
     }
 
-    const exists = state.users.some((user) => normalizeEmail(user.email) === email);
-    if (exists) {
-        showToast("Este e-mail já está cadastrado.");
+    try {
+        state.currentUser = await apiRequest("/auth/register", {
+            method: "POST",
+            body: JSON.stringify({ nome, email, senha, cidade })
+        });
+    } catch (error) {
+        showToast(error.message);
         return;
     }
-
-    state.users.push({
-        nome,
-        email,
-        senha,
-        cidade
-    });
-
-    state.currentUser = { nome, email, cidade };
     activateUserData();
+    await loadOrdersFromApi();
+    await renderMessages();
 
     saveState();
     showToast("Cadastro realizado com sucesso!");
     document.getElementById("form-cadastro")?.reset();
-    showScreen("screen-login");
+    applyLoggedUser();
+    renderProfile();
+    showScreen("screen-home");
 }
 
 function handleRecover(event) {
@@ -1859,8 +1846,15 @@ function goBack() {
     showScreen("screen-home");
 }
 
-function logout() {
+async function logout() {
+    saveState();
+    try {
+        await apiRequest("/auth/logout", { method: "POST" });
+    } catch {
+        showToast("Não foi possível confirmar a saída no servidor.");
+    }
     state.currentUser = null;
+    activateUserData();
     saveState();
     renderProfile();
     showToast("Você saiu da conta.");
@@ -1882,7 +1876,7 @@ function resetPublishForm() {
 
 // TROCA DE TELAS E CONTROLE DOS EVENTOS DA APLICACAO
 function showScreen(screenId, options = {}) {
-    if (screenId === "screen-checkout" && (!state.cart.length || !hasDeliveryData())) {
+    if (screenId === "screen-checkout" && (!state.cart.length || !state.currentUser?.id)) {
         startCheckout();
         return;
     }
@@ -1951,6 +1945,7 @@ function attachEvents() {
         if (button) {
             const action = button.dataset.action;
             const id = button.dataset.id;
+            const userId = button.dataset.userId;
             const category = button.dataset.category;
             const filter = button.dataset.filter;
 
@@ -1968,7 +1963,7 @@ function attachEvents() {
             }
             if (action === "open-chat") {
                 showScreen("screen-chat");
-                renderChat(id);
+                renderChat(id, userId);
             }
             if (action === "back-to-seller") {
                 showScreen("screen-vendedor");
@@ -2000,10 +1995,9 @@ function attachEvents() {
                 }
                 openProductDetails(id);
             }
-            if (["track-order", "advance-order", "refund-order", "rate-order"].includes(action)) {
+            if (["track-order", "cancel-demo-order"].includes(action)) {
                 handleOrderAction(action, id);
             }
-            if (action === "confirm-delivery") handleOrderAction(action, id);
         }
 
         if (!event.target.closest("#side-menu") && !event.target.closest("#btn-menu") && !event.target.closest(".side-menu-nav button")) {
@@ -2102,8 +2096,6 @@ function attachEvents() {
             reader.addEventListener("load", () => {
                 if (!state.currentUser) state.currentUser = { nome: "Visitante" };
                 state.currentUser.photo = reader.result;
-                const savedUser = state.users.find((user) => user.email === state.currentUser.email);
-                if (savedUser) savedUser.photo = reader.result;
                 saveState();
                 renderProfile();
                 showToast("Foto de perfil atualizada!");
@@ -2168,8 +2160,13 @@ function attachEvents() {
     }
 
     if (formPublicar) {
-        formPublicar.addEventListener("submit", (event) => {
+        formPublicar.addEventListener("submit", async (event) => {
             event.preventDefault();
+            if (!state.currentUser?.id) {
+                showToast("Entre em uma conta para publicar anúncios.");
+                showScreen("screen-login");
+                return;
+            }
             const name = document.getElementById("pub-nome")?.value.trim();
             const description = document.getElementById("pub-desc")?.value.trim();
             const priceValue = document.getElementById("pub-preco")?.value || "";
@@ -2221,10 +2218,20 @@ function attachEvents() {
                 image: images[0] || "",
                 images,
                 measurements,
-                stock: 1,
+                stock: existingProduct?.stock ?? 1,
                 ownerEmail: normalizeEmail(state.currentUser?.email)
             };
             const existingIndex = state.publishedProducts.findIndex((product) => product.id === editingProductId);
+            let savedProduct;
+            try {
+                savedProduct = await sendProductToApi(publishedProduct, existingIndex >= 0 ? "PUT" : "POST");
+            } catch (error) {
+                showToast(error.message);
+                if (error.status === 401) showScreen("screen-login");
+                return;
+            }
+            Object.assign(publishedProduct, savedProduct);
+
             if (existingIndex >= 0) {
                 const existing = state.publishedProducts[existingIndex];
                 if (!publishedProduct.image) publishedProduct.image = existing.image || "";
@@ -2233,12 +2240,10 @@ function attachEvents() {
                 Object.assign(existing, publishedProduct, { id: existing.id, stock: existing.stock });
                 const productIndex = PRODUCTS.findIndex((product) => product.id === existing.id);
                 if (productIndex >= 0) PRODUCTS[productIndex] = existing;
-                sendProductToApi(existing, "PUT");
                 showToast("Anúncio atualizado com sucesso!");
             } else {
                 state.publishedProducts.push(publishedProduct);
                 PRODUCTS.push(publishedProduct);
-                sendProductToApi(publishedProduct);
                 checkSavedSearchAlerts(publishedProduct);
                 showToast("Item publicado com sucesso!");
             }
@@ -2252,17 +2257,15 @@ function attachEvents() {
     }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     loadState();
     applyTheme();
-    if (!state.users.some((user) => user.email === "clayton@teste.com")) {
-        state.users.push({
-            nome: "Clayton", email: "clayton@teste.com", senha: "123456", cidade: "Londrina, PR"
-        });
-    }
+    state.currentUser = await restoreServerSession();
+    activateUserData();
+    await loadOrdersFromApi();
+    applyLoggedUser();
     saveState();
 
-    if (state.currentUser) applyLoggedUser();
     applyTranslations();
 
     updateCartBadge();

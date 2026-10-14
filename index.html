@@ -41,11 +41,12 @@
             <form id="form-login" novalidate>
                 <div class="input-group">
                     <label for="login-email">E-mail</label>
-                    <input type="email" id="login-email" placeholder="seu@email.com" required />
+                    <input type="email" id="login-email" autocomplete="email" placeholder="seu@email.com" required />
                 </div>
                 <div class="input-group">
                     <label for="login-senha">Senha</label>
-                    <input type="password" id="login-senha" placeholder="••••••••" required />
+                    <input type="password" id="login-senha" autocomplete="current-password" placeholder="••••••••"
+                        required />
                 </div>
                 <div id="login-error" class="form-message error hidden"></div>
                 <a class="link-small" onclick="showScreen('screen-recuperar')">Esqueci minha senha</a>
@@ -71,12 +72,12 @@
                         required />
                 </div>
                 <div class="input-group"><label for="cad-email">E-mail *</label><input type="email" id="cad-email"
-                        required /></div>
+                        autocomplete="email" required /></div>
                 <div class="input-row">
-                    <div class="input-group"><label>Senha *</label><input type="password" id="cad-senha" minlength="6"
-                            required /></div>
-                    <div class="input-group"><label>Confirmar *</label><input type="password" id="cad-confirma"
-                            required /></div>
+                    <div class="input-group"><label for="cad-senha">Senha *</label><input type="password" id="cad-senha"
+                            minlength="8" autocomplete="new-password" required /></div>
+                    <div class="input-group"><label for="cad-confirma">Confirmar *</label><input type="password"
+                            id="cad-confirma" minlength="8" autocomplete="new-password" required /></div>
                 </div>
                 <div class="input-row">
                     <div class="input-group"><label>Telefone</label><input type="tel" id="cad-telefone"
@@ -308,50 +309,14 @@
 
         <!-- ============ TELA: CHECKOUT ============ -->
         <main id="screen-dados" class="screen app-screen">
-            <h1 class="page-title">Dados para entrega</h1>
-            <p class="page-intro">Complete seus dados antes de finalizar a compra.</p>
+            <h1 class="page-title">Editar perfil</h1>
+            <p class="page-intro">Atualize o nome e a cidade da sua conta.</p>
             <form id="form-dados" class="card">
                 <div class="input-group"><label for="dados-nome">Nome completo *</label><input type="text"
                         id="dados-nome" required /></div>
-                <div class="input-group"><label for="dados-cpf">CPF *</label><input type="text" id="dados-cpf"
-                        inputmode="numeric" placeholder="000.000.000-00" required /></div>
-                <div class="input-row">
-                    <div class="input-group"><label for="dados-telefone">Telefone *</label><input type="tel"
-                            id="dados-telefone" placeholder="(43) 99999-9999" required /></div>
-                    <div class="input-group"><label for="dados-cep">CEP *</label><input type="text" id="dados-cep"
-                            inputmode="numeric" placeholder="00000-000" required /></div>
-                </div>
-                <div class="input-row">
-                    <div class="input-group"><label for="dados-rua">Rua *</label><input type="text" id="dados-rua"
-                            required /></div>
-                    <div class="input-group"><label for="dados-numero">Número *</label><input type="text"
-                            id="dados-numero" required /></div>
-                </div>
-                <div class="input-row">
-                    <div class="input-group"><label for="dados-bairro">Bairro *</label><input type="text"
-                            id="dados-bairro" required /></div>
-                    <div class="input-group"><label for="dados-cidade">Cidade *</label><input type="text"
-                            id="dados-cidade" placeholder="Londrina" required /></div>
-                    <div class="input-group"><label for="dados-uf">UF *</label><input type="text" id="dados-uf"
-                            maxlength="2" placeholder="PR" required /></div>
-                </div>
-                <div class="input-group"><label for="dados-complemento">Complemento</label><input type="text"
-                        id="dados-complemento" placeholder="Apartamento, bloco etc." /></div>
-                <label class="card-check"><input type="checkbox" id="dados-cadastrar-cartao" /> Cadastrar cartão para
-                    compras futuras</label>
-                <div id="card-fields" class="card-fields hidden">
-                    <div class="input-group"><label for="dados-cartao-numero">Número do cartão</label><input type="text"
-                            id="dados-cartao-numero" inputmode="numeric" placeholder="0000 0000 0000 0000" /></div>
-                    <div class="input-row">
-                        <div class="input-group"><label for="dados-cartao-nome">Nome no cartão</label><input type="text"
-                                id="dados-cartao-nome" /></div>
-                        <div class="input-group"><label for="dados-cartao-validade">Validade</label><input type="text"
-                                id="dados-cartao-validade" placeholder="MM/AA" /></div>
-                        <div class="input-group"><label for="dados-cartao-cvv">CVV</label><input type="password"
-                                id="dados-cartao-cvv" inputmode="numeric" maxlength="4" /></div>
-                    </div>
-                </div>
-                <button class="btn btn-primary btn-full" type="submit">Continuar para pagamento</button>
+                <div class="input-group"><label for="dados-cidade">Cidade</label><input type="text" id="dados-cidade"
+                        placeholder="Londrina, PR" required /></div>
+                <button class="btn btn-primary btn-full" type="submit">Salvar perfil</button>
             </form>
         </main>
 
@@ -495,10 +460,10 @@
             <div class="order-filters" role="group" aria-label="Filtrar pedidos">
                 <button class="order-filter active" data-action="filter-orders" data-filter="todos"
                     type="button">Todos</button>
-                <button class="order-filter" data-action="filter-orders" data-filter="avaliar"
-                    type="button">Avaliar</button>
-                <button class="order-filter" data-action="filter-orders" data-filter="reembolso"
-                    type="button">Reembolso</button>
+                <button class="order-filter" data-action="filter-orders" data-filter="ativos"
+                    type="button">Ativos</button>
+                <button class="order-filter" data-action="filter-orders" data-filter="cancelados"
+                    type="button">Cancelados</button>
             </div>
             <div id="orders-list"></div>
         </main>
