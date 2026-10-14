@@ -1,3 +1,4 @@
+# Orienta robos de busca sobre as paginas permitidas e onde encontrar o sitemap.
 User-agent: *
 Allow: /
 

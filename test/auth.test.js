@@ -1,3 +1,4 @@
+// Testes de integracao para autenticacao, permissoes, pedidos, estoque e privacidade do chat.
 const assert = require("node:assert/strict");
 const { spawn } = require("node:child_process");
 const fs = require("node:fs");

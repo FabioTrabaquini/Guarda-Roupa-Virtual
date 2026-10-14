@@ -1,3 +1,4 @@
+# Arquivos locais, banco de desenvolvimento e logs que nao devem ser versionados.
 node_modules/
 data/
 .DS_Store

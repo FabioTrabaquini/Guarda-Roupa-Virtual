@@ -1,3 +1,4 @@
+// Servidor HTTP do app: API de contas, anuncios, pedidos e mensagens, com persistencia SQLite.
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");

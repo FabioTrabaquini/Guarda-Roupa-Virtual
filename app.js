@@ -1,6 +1,7 @@
-/* ================================================
-   GUARDA ROUPA VIRTUAL — app.js
-   ================================================ */
+/*
+ * Controla a interface do marketplace: estado da sessao, catalogo, filtros,
+ * anuncios, checkout demonstrativo, pedidos e comunicacao com a API.
+ */
 
 let PRODUCTS = [
     { id: 1, nome: "Camisa Social Preta", emoji: "👔", categoria: "Camisetas", marca: "Reserva", tamanho: "M", cor: "Preto", estado: "Excelente", preco: 59.99, aluguel: null, troca: false, local: "Londrina, PR", vendedor: "Léo Pereira", rating: 4.8, pop: 120, desc: "Camisa social preta, semi nova, ideal para ocasiões formais." },

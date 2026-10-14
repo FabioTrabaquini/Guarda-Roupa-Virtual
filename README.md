@@ -33,6 +33,16 @@ Contas, sessões, anúncios, estoque e pedidos são mantidos em `data/marketplac
 - Chat persistente entre contas em anúncios publicados; avaliações e suporte ainda são locais ou simulados.
 - Idioma em português, inglês e espanhol e moeda em BRL, USD ou EUR.
 
+## Arquivos de configuração e dados
+
+- `package.json`: dependências e comandos para iniciar o app e rodar os testes.
+- `package-lock.json`: versões exatas das dependências instaladas pelo npm.
+- `products.json`: catálogo inicial importado para o banco local na primeira inicialização.
+- `site.webmanifest`: nome, cores, ícone e modo de abertura quando o site é instalado como app.
+- `.vscode/tasks.json`: tarefa do VS Code que inicia o servidor com `npm start`.
+
+Esses arquivos JSON não recebem comentários dentro do próprio arquivo porque o formato JSON não permite comentários válidos.
+
 ## Demonstração
 
 Capturas de tela do site:
