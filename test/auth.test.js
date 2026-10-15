@@ -115,6 +115,27 @@ test("account authentication and listing ownership are enforced by the server", 
     });
     assert.equal(duplicate.status, 409);
 
+    const recoveryRequest = await request(server, "/api/auth/recover", {
+        method: "POST",
+        body: { email: firstEmail }
+    });
+    assert.equal(recoveryRequest.status, 200);
+    const recoveryPayload = await recoveryRequest.json();
+    assert.equal(recoveryPayload.ok, true);
+    assert.match(recoveryPayload.message, /link|recupera|e-mail|e-mail/i);
+
+    const recoveryForUnknown = await request(server, "/api/auth/recover", {
+        method: "POST",
+        body: { email: `missing-${Date.now()}@example.edu` }
+    });
+    assert.equal(recoveryForUnknown.status, 200);
+
+    const forbiddenRepoFile = await fetch(`${server.baseUrl}/server.js`);
+    assert.equal(forbiddenRepoFile.status, 403);
+
+    const malformedRequest = await fetch(`${server.baseUrl}/%`);
+    assert.equal(malformedRequest.status, 400);
+
     const initialSession = await request(server, "/api/auth/me", { cookie: firstCookie });
     assert.equal(initialSession.status, 200);
 

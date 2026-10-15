@@ -11,6 +11,16 @@ const PORT = process.env.PORT || 3000;
 const scrypt = promisify(crypto.scrypt);
 const sessionLifetime = 7 * 24 * 60 * 60 * 1000;
 const loginAttempts = new Map();
+const allowedStaticFiles = new Set([
+    "/",
+    "/index.html",
+    "/app.js",
+    "/style.css",
+    "/site.webmanifest",
+    "/robots.txt",
+    "/sitemap.xml",
+    "/products.json"
+]);
 const dataDirectory = path.resolve(process.env.APP_DATA_DIR || path.join(__dirname, "data"));
 const databaseFile = path.join(dataDirectory, "marketplace.sqlite");
 fs.mkdirSync(dataDirectory, { recursive: true });
@@ -120,6 +130,14 @@ async function initializeDatabase() {
             expires_at INTEGER NOT NULL
         );
         CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires_at);
+        CREATE TABLE IF NOT EXISTS password_reset_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            token_hash TEXT NOT NULL,
+            expires_at INTEGER NOT NULL,
+            created_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS password_reset_expiry ON password_reset_tokens(expires_at);
         CREATE TABLE IF NOT EXISTS products (
             id INTEGER PRIMARY KEY,
             data TEXT NOT NULL,
@@ -244,6 +262,15 @@ function createSession(userId, response) {
     response.setHeader("Set-Cookie", sessionCookie(token, Math.floor(sessionLifetime / 1000)));
 }
 
+function createPasswordResetToken(userId) {
+    const token = crypto.randomBytes(24).toString("base64url");
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const expiresAt = Date.now() + 15 * 60 * 1000;
+    database.run("INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?)", [userId, tokenHash, expiresAt, new Date().toISOString()]);
+    persistDatabase();
+    return token;
+}
+
 // RESPOSTAS HTTP E LEITURA DO CORPO DAS REQUISICOES
 function sendJson(response, statusCode, data) {
     response.writeHead(statusCode, {
@@ -298,7 +325,7 @@ const server = http.createServer(async (request, response) => {
         return;
     }
 
-    if (request.method === "POST" && ["/api/auth/register", "/api/auth/login", "/api/auth/logout"].includes(requestUrl.pathname)) {
+    if (request.method === "POST" && ["/api/auth/register", "/api/auth/login", "/api/auth/logout", "/api/auth/recover"].includes(requestUrl.pathname)) {
         if (!isSameOrigin(request)) {
             sendJson(response, 403, { error: "Origem da requisicao invalida." });
             return;
@@ -312,6 +339,34 @@ const server = http.createServer(async (request, response) => {
             }
             response.setHeader("Set-Cookie", sessionCookie("", 0));
             sendJson(response, 200, { ok: true });
+            return;
+        }
+
+        if (requestUrl.pathname === "/api/auth/recover") {
+            try {
+                const data = await readBody(request);
+                const email = String(data.email || "").trim().toLowerCase();
+                const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+                if (!validEmail) {
+                    sendJson(response, 200, { ok: true, message: "Se a conta existir, enviaremos um link de recuperacao para o e-mail informado." });
+                    return;
+                }
+                const user = queryOne("SELECT id FROM users WHERE email = ?", [email]);
+                if (user) {
+                    const resetToken = createPasswordResetToken(user.id);
+                    sendJson(response, 200, {
+                        ok: true,
+                        message: "Se a conta existir, enviaremos um link de recuperacao para o e-mail informado.",
+                        resetToken,
+                        expiresInMinutes: 15
+                    });
+                    return;
+                }
+                sendJson(response, 200, { ok: true, message: "Se a conta existir, enviaremos um link de recuperacao para o e-mail informado." });
+                return;
+            } catch (error) {
+                sendJson(response, 400, { error: error.message });
+            }
             return;
         }
 
@@ -826,7 +881,22 @@ const server = http.createServer(async (request, response) => {
 
     if (request.method === "GET") {
         const isProductPage = /^\/produto\/\d+(?:-[^/]*)?\/?$/.test(requestUrl.pathname);
-        const requestedPath = decodeURIComponent(requestUrl.pathname === "/" || isProductPage ? "/index.html" : requestUrl.pathname);
+        let requestedPath;
+        try {
+            requestedPath = decodeURIComponent(requestUrl.pathname === "/" || isProductPage ? "/index.html" : requestUrl.pathname);
+        } catch {
+            response.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+            response.end("URL invalida.");
+            return;
+        }
+
+        const isAllowedStaticPath = allowedStaticFiles.has(requestedPath) || requestedPath.startsWith("/imagens/");
+        if (!isAllowedStaticPath) {
+            response.writeHead(403);
+            response.end("Acesso negado.");
+            return;
+        }
+
         const filePath = path.resolve(__dirname, `.${requestedPath}`);
         const relativePath = path.relative(__dirname, filePath);
         const protectedPath = relativePath.split(path.sep).some((part) => part.startsWith(".") || part === "node_modules" || part === path.basename(dataDirectory));

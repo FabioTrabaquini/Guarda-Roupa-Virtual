@@ -200,6 +200,31 @@ async function sendProductToApi(product, method = "POST") {
 }
 
 // PERSISTENCIA DO ESTADO NO NAVEGADOR
+function safeStorageRead(key) {
+    try {
+        return localStorage.getItem(key);
+    } catch {
+        return null;
+    }
+}
+
+function safeStorageWrite(key, value) {
+    try {
+        localStorage.setItem(key, value);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function safeStorageRemove(key) {
+    try {
+        localStorage.removeItem(key);
+    } catch {
+        // Fallback silencioso para navegadores que bloqueiam storage.
+    }
+}
+
 function saveState() {
     persistUserData();
     const savedState = {
@@ -218,12 +243,31 @@ function saveState() {
         settings: state.settings,
         userData: state.userData
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(savedState));
+
+    const serialized = JSON.stringify(savedState);
+    if (!safeStorageWrite(STORAGE_KEY, serialized)) {
+        const reducedState = {
+            ...savedState,
+            reviews: [],
+            notifications: [],
+            supportMessages: [],
+            drafts: [],
+            userData: {
+                [currentUserKey()]: {
+                    ...((savedState.userData || {})[currentUserKey()] || {}),
+                    notifications: [],
+                    supportMessages: [],
+                    drafts: []
+                }
+            }
+        };
+        safeStorageWrite(STORAGE_KEY, JSON.stringify(reducedState));
+    }
 }
 
 function loadState() {
     try {
-        const savedState = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        const savedState = JSON.parse(safeStorageRead(STORAGE_KEY));
         if (!savedState) return;
 
         Object.assign(state, savedState);
@@ -242,7 +286,7 @@ function loadState() {
         state.userData = state.userData || {};
         updateCurrency();
     } catch {
-        localStorage.removeItem(STORAGE_KEY);
+        safeStorageRemove(STORAGE_KEY);
     }
 }
 
@@ -279,7 +323,7 @@ function applyLoggedUser() {
     const profileCity = document.getElementById("profile-city");
 
     const user = state.currentUser;
-    const name = user ? user.nome : "Clayton";
+    const name = user ? user.nome : "Visitante";
     const firstName = name.split(" ")[0];
 
     if (firstname) firstname.textContent = firstName;
@@ -1021,7 +1065,7 @@ function renderProfile() {
     const avatar = document.getElementById("profile-avatar");
     const profileThemeStatus = document.getElementById("profile-theme-status");
 
-    const user = state.currentUser || { nome: "Clayton", cidade: "Londrina, PR" };
+    const user = state.currentUser || { nome: "Visitante", cidade: "Londrina, PR" };
 
     if (profileName) profileName.textContent = user.nome;
     if (profileCity) profileCity.textContent = user.cidade;
@@ -1088,12 +1132,12 @@ function renderCart() {
     container.innerHTML = `
         ${items}
         <div class="summary-box card">
-            <div class="coupon-row">${couponPicker}<input id="coupon-input" placeholder="Cupom de desconto" /><button type="button" class="btn btn-outline btn-sm" onclick="applyCoupon()">Aplicar</button></div>
-            ${state.appliedCoupon ? `<div class="summary-row coupon-applied"><span>${escapeHtml(state.appliedCoupon)} <button type="button" onclick="removeCoupon()">Remover</button></span><strong>-${formatPrice(discount)}</strong></div>` : ""}
+            <div class="coupon-row">${couponPicker}<input id="coupon-input" placeholder="Cupom de desconto" /><button type="button" class="btn btn-outline btn-sm" data-action="apply-coupon">Aplicar</button></div>
+            ${state.appliedCoupon ? `<div class="summary-row coupon-applied"><span>${escapeHtml(state.appliedCoupon)} <button type="button" data-action="remove-coupon">Remover</button></span><strong>-${formatPrice(discount)}</strong></div>` : ""}
             <div class="summary-row"><span>Subtotal</span><strong>${formatPrice(subtotal)}</strong></div>
             <div class="summary-row"><span>Frete</span><strong>Grátis</strong></div>
             <div class="summary-row total"><span>Total</span><strong>${formatPrice(total)}</strong></div>
-            <button class="btn btn-primary btn-full" onclick="startCheckout()">Finalizar compra</button>
+            <button class="btn btn-primary btn-full" type="button" data-action="start-checkout">Finalizar compra</button>
         </div>
     `;
 
@@ -1818,9 +1862,29 @@ async function handleCadastro(event) {
     showScreen("screen-home");
 }
 
-function handleRecover(event) {
+async function handleRecover(event) {
     event.preventDefault();
-    showToast("Link de recuperação enviado!");
+    const emailInput = document.getElementById("recover-email");
+    const email = normalizeEmail(emailInput?.value);
+
+    if (!email) {
+        showToast("Informe um e-mail válido.");
+        if (emailInput) emailInput.focus();
+        return;
+    }
+
+    try {
+        await apiRequest("/auth/recover", {
+            method: "POST",
+            body: JSON.stringify({ email })
+        });
+    } catch (error) {
+        showToast(error.message);
+        return;
+    }
+
+    showToast("Se a conta existir, enviaremos um link de recuperação para o e-mail informado.");
+    event.target.reset();
     showScreen("screen-login");
 }
 
@@ -1935,110 +1999,148 @@ function showScreen(screenId, options = {}) {
     }
 }
 
-function attachEvents() {
-    document.addEventListener("submit", (event) => {
-        if (event.target.matches(".seller-message-form")) handleSellerMessage(event);
-        if (event.target.matches(".order-review-form")) submitOrderReview(event);
-    });
-
-    document.addEventListener("click", (event) => {
-        const button = event.target.closest("[data-action]");
-        if (button) {
-            const action = button.dataset.action;
-            const id = button.dataset.id;
-            const userId = button.dataset.userId;
-            const category = button.dataset.category;
-            const filter = button.dataset.filter;
-
-            if (action === "add-cart") addToCart(id);
-            if (action === "details") {
-                openProductDetails(id);
-            }
-            if (action === "view-seller") {
-                showScreen("screen-vendedor");
-                renderSellerProfile(id);
-            }
-            if (action === "back-to-details") {
-                showScreen("screen-detalhes");
-                renderDetails(id);
-            }
-            if (action === "open-chat") {
-                showScreen("screen-chat");
-                renderChat(id, userId);
-            }
-            if (action === "back-to-seller") {
-                showScreen("screen-vendedor");
-                renderSellerProfile(id);
-            }
-            if (action === "toggle-favorite") toggleFavorite(id);
-            if (action === "edit-product") startEditProduct(id);
-            if (action === "delete-product") deleteProduct(id);
-            if (action === "increase-qty") changeQty(id, "increase");
-            if (action === "decrease-qty") changeQty(id, "decrease");
-            if (action === "filter-category") {
-                filterByCategory(category);
-            }
-            if (action === "filter-orders") filterOrders(filter);
-            if (action === "save-search") saveCurrentSearch();
-            if (action === "apply-saved-search") applySavedSearch(id);
-            if (action === "delete-saved-search") {
-                state.savedSearches = state.savedSearches.filter((search) => search.id !== id);
-                saveState();
-                renderSavedSearches();
-            }
-            if (action === "share-wishlist") shareWishlist();
-            if (action === "open-notification-product") {
-                const notification = state.notifications.find((item) => Number(item.productId) === Number(id));
-                if (notification) {
-                    notification.read = true;
-                    saveState();
-                    updateNotificationBadge();
-                }
-                openProductDetails(id);
-            }
-            if (["track-order", "cancel-demo-order"].includes(action)) {
-                handleOrderAction(action, id);
-            }
-        }
-
-        if (!event.target.closest("#side-menu") && !event.target.closest("#btn-menu") && !event.target.closest(".side-menu-nav button")) {
-            document.getElementById("side-menu")?.classList.add("hidden");
-        }
-
-        if (!event.target.closest("#notification-panel") && !event.target.closest("#btn-notify")) {
-            document.getElementById("notification-panel")?.classList.add("hidden");
-        }
-    });
-
-    document.addEventListener("keydown", (event) => {
-        const notification = event.target.closest('.notification-item[data-action="open-notification-product"]');
-        if (notification && ["Enter", " "].includes(event.key)) {
-            event.preventDefault();
-            notification.click();
-            return;
-        }
-        const card = event.target.closest(".product-card");
-        if (!card || event.target !== card || !["Enter", " "].includes(event.key)) return;
-
+function handleGlobalActionClick(event) {
+    const screenTrigger = event.target.closest("[data-screen]");
+    if (screenTrigger) {
         event.preventDefault();
-        openProductDetails(card.dataset.id);
-    });
-
-    const btnBack = document.getElementById("btn-back");
-    if (btnBack) {
-        btnBack.addEventListener("click", goBack);
+        const targetScreen = screenTrigger.dataset.screen;
+        if (targetScreen) {
+            showScreen(targetScreen);
+            if (targetScreen === "screen-mensagens") renderMessages();
+        }
+        return;
     }
+
+    const infoTrigger = event.target.closest("[data-info]");
+    if (infoTrigger) {
+        event.preventDefault();
+        showInfoDialog(infoTrigger.dataset.info, infoTrigger.dataset.infoText || "");
+        return;
+    }
+
+    const demoLoginTrigger = event.target.closest("[data-demo-login]");
+    if (demoLoginTrigger) {
+        event.preventDefault();
+        loginDemo();
+        return;
+    }
+
+    const button = event.target.closest("[data-action]");
+    if (!button) {
+        handlePanelDismissal(event);
+        return;
+    }
+
+    const action = button.dataset.action;
+    const id = button.dataset.id;
+    const userId = button.dataset.userId;
+    const category = button.dataset.category;
+    const filter = button.dataset.filter;
+
+    if (action === "add-cart") addToCart(id);
+    if (action === "details") openProductDetails(id);
+    if (action === "view-seller") {
+        showScreen("screen-vendedor");
+        renderSellerProfile(id);
+    }
+    if (action === "back-to-details") {
+        showScreen("screen-detalhes");
+        renderDetails(id);
+    }
+    if (action === "open-chat") {
+        showScreen("screen-chat");
+        renderChat(id, userId);
+    }
+    if (action === "back-to-seller") {
+        showScreen("screen-vendedor");
+        renderSellerProfile(id);
+    }
+    if (action === "toggle-favorite") toggleFavorite(id);
+    if (action === "edit-product") startEditProduct(id);
+    if (action === "delete-product") deleteProduct(id);
+    if (action === "increase-qty") changeQty(id, "increase");
+    if (action === "decrease-qty") changeQty(id, "decrease");
+    if (action === "filter-category") filterByCategory(category);
+    if (action === "filter-orders") filterOrders(filter);
+    if (action === "save-search") saveCurrentSearch();
+    if (action === "apply-saved-search") applySavedSearch(id);
+    if (action === "delete-saved-search") {
+        state.savedSearches = state.savedSearches.filter((search) => search.id !== id);
+        saveState();
+        renderSavedSearches();
+    }
+    if (action === "share-wishlist") shareWishlist();
+    if (action === "open-notification-product") {
+        const notification = state.notifications.find((item) => Number(item.productId) === Number(id));
+        if (notification) {
+            notification.read = true;
+            saveState();
+            updateNotificationBadge();
+        }
+        openProductDetails(id);
+    }
+    if (["track-order", "cancel-demo-order"].includes(action)) {
+        handleOrderAction(action, id);
+    }
+
+    handlePanelDismissal(event);
+}
+
+function handlePanelDismissal(event) {
+    if (!event.target.closest("#side-menu") && !event.target.closest("#btn-menu") && !event.target.closest(".side-menu-nav button")) {
+        document.getElementById("side-menu")?.classList.add("hidden");
+    }
+
+    if (!event.target.closest("#notification-panel") && !event.target.closest("#btn-notify")) {
+        document.getElementById("notification-panel")?.classList.add("hidden");
+    }
+}
+
+function handleGlobalKeyboardShortcuts(event) {
+    const notification = event.target.closest('.notification-item[data-action="open-notification-product"]');
+    if (notification && ["Enter", " "].includes(event.key)) {
+        event.preventDefault();
+        notification.click();
+        return;
+    }
+    const card = event.target.closest(".product-card");
+    if (!card || event.target !== card || !["Enter", " "].includes(event.key)) return;
+
+    event.preventDefault();
+    openProductDetails(card.dataset.id);
+}
+
+function bindNavigationControls() {
+    const btnBack = document.getElementById("btn-back");
+    if (btnBack) btnBack.addEventListener("click", goBack);
 
     const btnMenu = document.getElementById("btn-menu");
-    if (btnMenu) {
-        btnMenu.addEventListener("click", toggleMenu);
-    }
+    if (btnMenu) btnMenu.addEventListener("click", toggleMenu);
 
     const btnNotify = document.getElementById("btn-notify");
-    if (btnNotify) {
-        btnNotify.addEventListener("click", toggleNotifications);
-    }
+    if (btnNotify) btnNotify.addEventListener("click", toggleNotifications);
+}
 
+function bindFilterInputs() {
+    const searchInput = document.getElementById("search-input");
+    const catalogFilterInputs = [
+        document.getElementById("f-categoria"),
+        document.getElementById("f-tamanho"),
+        document.getElementById("f-modalidade"),
+        document.getElementById("f-estado"),
+        document.getElementById("f-preco-min"),
+        document.getElementById("f-preco-max"),
+        document.getElementById("f-local"),
+        document.getElementById("f-ordenar")
+    ].filter(Boolean);
+
+    if (searchInput) searchInput.addEventListener("input", applyFilters);
+    catalogFilterInputs.forEach((filterInput) => {
+        filterInput.addEventListener(filterInput.tagName === "SELECT" ? "change" : "input", applyFilters);
+    });
+}
+
+function bindFormListeners() {
     const formLogin = document.getElementById("form-login");
     const formCadastro = document.getElementById("form-cadastro");
     const formRecover = document.getElementById("form-recuperar");
@@ -2048,7 +2150,6 @@ function attachEvents() {
     const formSettings = document.getElementById("form-configuracoes");
     const formTema = document.getElementById("form-tema");
     const formSuporte = document.getElementById("form-suporte");
-    const photoInput = document.getElementById("pub-fotos");
     const saveDraftButton = document.getElementById("save-draft");
     const cardToggle = document.getElementById("dados-cadastrar-cartao");
     const cardFields = document.getElementById("card-fields");
@@ -2056,6 +2157,7 @@ function attachEvents() {
 
     const loginEmail = document.getElementById("login-email");
     const loginSenha = document.getElementById("login-senha");
+
     if (loginEmail) {
         loginEmail.addEventListener("input", () => {
             loginEmail.setCustomValidity("");
@@ -2115,48 +2217,6 @@ function attachEvents() {
             });
             saveState();
             showToast("Rascunho salvo neste navegador.");
-        });
-    }
-
-    if (photoInput) {
-        photoInput.addEventListener("change", async () => {
-            const preview = document.getElementById("photo-preview");
-            const quality = document.getElementById("photo-quality");
-            if (!preview) return;
-            preview.innerHTML = "";
-            state.pendingImages = [];
-            const selectedFiles = [...photoInput.files];
-            const warnings = [];
-            if (selectedFiles.length > 8) showToast("Você pode adicionar no máximo 8 fotos.");
-            const validFiles = selectedFiles.slice(0, 8).filter((file) => {
-                if (!file.type.startsWith("image/")) {
-                    warnings.push(`${file.name}: arquivo não reconhecido como imagem.`);
-                    return false;
-                }
-                if (file.size > 5 * 1024 * 1024) {
-                    warnings.push(`${file.name}: excede o limite de 5 MB.`);
-                    return false;
-                }
-                return true;
-            });
-            try {
-                const preparedImages = await Promise.all(validFiles.map(async (file) => ({ file, image: await prepareProductImage(file) })));
-                state.pendingImages = preparedImages.map(({ image }) => image.src);
-                preparedImages.forEach(({ file, image: prepared }, index) => {
-                    if (Math.min(prepared.originalWidth, prepared.originalHeight) < 700) warnings.push(`${file.name}: resolução baixa; tente uma foto com mais detalhes.`);
-                    if (prepared.smallFile) warnings.push(`${file.name}: arquivo pequeno; confira se a foto está nítida.`);
-                    if (prepared.brightness < 48) warnings.push(`${file.name}: pode estar escura; experimente usar luz natural.`);
-                    if (prepared.brightness > 232) warnings.push(`${file.name}: pode estar clara demais; confira se as cores aparecem.`);
-                    if (prepared.contrast < 12) warnings.push(`${file.name}: há pouco contraste; confira se a peça está focada e visível.`);
-                    const previewImage = document.createElement("img");
-                    previewImage.alt = `Pré-visualização ${index + 1}: ${file.name}`;
-                    previewImage.src = prepared.src;
-                    preview.appendChild(previewImage);
-                });
-                if (quality) quality.innerHTML = `<strong>${preparedImages.length} de 8 fotos selecionadas</strong><ul>${warnings.length ? warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join("") : "<li>Boa seleção. Confira frente, costas, etiqueta e detalhes da peça.</li>"}</ul>`;
-            } catch {
-                showToast("Não foi possível preparar uma das fotos. Tente outro arquivo.");
-            }
         });
     }
 
@@ -2256,6 +2316,69 @@ function attachEvents() {
             showScreen("screen-home");
         });
     }
+}
+
+function bindPhotoUploadInput() {
+    const photoInput = document.getElementById("pub-fotos");
+    if (!photoInput) return;
+
+    photoInput.addEventListener("change", async () => {
+        const preview = document.getElementById("photo-preview");
+        const quality = document.getElementById("photo-quality");
+        if (!preview) return;
+        preview.innerHTML = "";
+        state.pendingImages = [];
+        const selectedFiles = [...photoInput.files];
+        const warnings = [];
+        if (selectedFiles.length > 8) showToast("Você pode adicionar no máximo 8 fotos.");
+        const validFiles = selectedFiles.slice(0, 8).filter((file) => {
+            if (!file.type.startsWith("image/")) {
+                warnings.push(`${file.name}: arquivo não reconhecido como imagem.`);
+                return false;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                warnings.push(`${file.name}: excede o limite de 5 MB.`);
+                return false;
+            }
+            return true;
+        });
+
+        try {
+            const preparedImages = await Promise.all(validFiles.map(async (file) => ({ file, image: await prepareProductImage(file) })));
+            state.pendingImages = preparedImages.map(({ image }) => image.src);
+            preparedImages.forEach(({ file, image: prepared }, index) => {
+                if (Math.min(prepared.originalWidth, prepared.originalHeight) < 700) warnings.push(`${file.name}: resolução baixa; tente uma foto com mais detalhes.`);
+                if (prepared.smallFile) warnings.push(`${file.name}: arquivo pequeno; confira se a foto está nítida.`);
+                if (prepared.brightness < 48) warnings.push(`${file.name}: pode estar escura; experimente usar luz natural.`);
+                if (prepared.brightness > 232) warnings.push(`${file.name}: pode estar clara demais; confira se as cores aparecem.`);
+                if (prepared.contrast < 12) warnings.push(`${file.name}: há pouco contraste; confira se a peça está focada e visível.`);
+                const previewImage = document.createElement("img");
+                previewImage.alt = `Pré-visualização ${index + 1}: ${file.name}`;
+                previewImage.src = prepared.src;
+                preview.appendChild(previewImage);
+            });
+            if (quality) {
+                quality.innerHTML = `<strong>${preparedImages.length} de 8 fotos selecionadas</strong><ul>${warnings.length ? warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join("") : "<li>Boa seleção. Confira frente, costas, etiqueta e detalhes da peça.</li>"}</ul>`;
+            }
+        } catch {
+            showToast("Não foi possível preparar uma das fotos. Tente outro arquivo.");
+        }
+    });
+}
+
+function attachEvents() {
+    document.addEventListener("submit", (event) => {
+        if (event.target.matches(".seller-message-form")) handleSellerMessage(event);
+        if (event.target.matches(".order-review-form")) submitOrderReview(event);
+    });
+
+    document.addEventListener("click", handleGlobalActionClick);
+    document.addEventListener("keydown", handleGlobalKeyboardShortcuts);
+
+    bindNavigationControls();
+    bindFilterInputs();
+    bindFormListeners();
+    bindPhotoUploadInput();
 }
 
 document.addEventListener("DOMContentLoaded", async () => {

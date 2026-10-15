@@ -50,12 +50,12 @@
                         required />
                 </div>
                 <div id="login-error" class="form-message error hidden"></div>
-                <a class="link-small" onclick="showScreen('screen-recuperar')">Esqueci minha senha</a>
+                <a class="link-small" href="#" data-screen="screen-recuperar">Esqueci minha senha</a>
                 <button type="submit" class="btn btn-primary btn-full">Entrar</button>
             </form>
-            <p class="auth-switch">Não tem conta? <a onclick="showScreen('screen-cadastro')">Cadastre-se</a></p>
-            <button class="btn btn-ghost btn-full" onclick="loginDemo()">
-                <i class="fa-solid fa-bolt"></i> Entrar como visitante (demo)
+            <p class="auth-switch">Não tem conta? <a href="#" data-screen="screen-cadastro">Cadastre-se</a></p>
+            <button class="btn btn-ghost btn-full" type="button" data-demo-login="true">
+                <i class="fa-solid fa-bolt"></i> Entrar como visitante
             </button>
         </div>
     </section>
@@ -88,7 +88,7 @@
                 </div>
                 <button type="submit" class="btn btn-primary btn-full">Cadastrar</button>
             </form>
-            <p class="auth-switch">Já tem conta? <a onclick="showScreen('screen-login')">Entrar</a></p>
+            <p class="auth-switch">Já tem conta? <a href="#" data-screen="screen-login">Entrar</a></p>
         </div>
     </section>
 
@@ -100,10 +100,11 @@
                 <p>Enviaremos um link para seu e-mail.</p>
             </div>
             <form id="form-recuperar">
-                <div class="input-group"><label>E-mail</label><input type="email" required /></div>
+                <div class="input-group"><label for="recover-email">E-mail</label><input id="recover-email" type="email"
+                        required /></div>
                 <button type="submit" class="btn btn-primary btn-full">Enviar link</button>
             </form>
-            <p class="auth-switch"><a onclick="showScreen('screen-login')">← Voltar ao login</a></p>
+            <p class="auth-switch"><a href="#" data-screen="screen-login">← Voltar ao login</a></p>
         </div>
     </section>
 
@@ -117,20 +118,21 @@
                 <button class="icon-btn back-btn hidden" id="btn-back" aria-label="Voltar para a tela anterior">
                     <i class="fa-solid fa-arrow-left"></i>
                 </button>
-                <span class="greeting">Olá, <b id="user-firstname">Clayton</b>!</span>
+                <span class="greeting">Olá, <b id="user-firstname">Visitante</b>!</span>
             </div>
-            <button class="app-header-brand hidden" id="app-header-brand" onclick="showScreen('screen-home')"
+            <button class="app-header-brand hidden" id="app-header-brand" type="button" data-screen="screen-home"
                 aria-label="Voltar para a tela inicial">Guarda Roupa <span>Virtual</span></button>
             <div class="header-right">
-                <button class="icon-btn badge-btn" aria-label="Abrir favoritos"
-                    onclick="showScreen('screen-favoritos')">
+                <button class="icon-btn badge-btn" aria-label="Abrir favoritos" type="button"
+                    data-screen="screen-favoritos">
                     <i class="fa-regular fa-heart"></i><span class="badge hidden" id="favorite-count">0</span>
                 </button>
-                <button class="icon-btn badge-btn" aria-label="Abrir carrinho" onclick="showScreen('screen-carrinho')">
+                <button class="icon-btn badge-btn" aria-label="Abrir carrinho" type="button"
+                    data-screen="screen-carrinho">
                     <i class="fa-solid fa-cart-shopping"></i><span class="badge hidden" id="cart-count">0</span>
                 </button>
-                <button class="icon-btn badge-btn" aria-label="Abrir mensagens"
-                    onclick="showScreen('screen-mensagens'); renderMessages()">
+                <button class="icon-btn badge-btn" aria-label="Abrir mensagens" type="button"
+                    data-screen="screen-mensagens">
                     <i class="fa-regular fa-comments"></i><span class="badge hidden" id="message-count">0</span>
                 </button>
                 <button class="icon-btn badge-btn" id="btn-notify" aria-label="Notificações">
@@ -167,13 +169,13 @@
 
             <div class="section-header">
                 <h2>Categorias</h2>
-                <a class="link" onclick="showScreen('screen-catalogo')">Ver todas</a>
+                <a class="link" href="#" data-screen="screen-catalogo">Ver todas</a>
             </div>
             <div class="categories" id="categories-list"></div>
 
             <div class="section-header">
                 <h2>Destaques</h2>
-                <a class="link" onclick="showScreen('screen-catalogo')">Ver todas</a>
+                <a class="link" href="#" data-screen="screen-catalogo">Ver todas</a>
             </div>
             <div class="products-grid" id="home-products"></div>
 
@@ -193,13 +195,13 @@
                 <h3>Guarda Roupa <span>Virtual</span></h3>
                 <p>Moda circular, consciente e acessível.</p>
                 <div class="footer-links">
-                    <a href="#"
-                        onclick="event.preventDefault(); showInfoDialog('Sobre', 'O Guarda Roupa Virtual conecta pessoas para comprar, vender, trocar e alugar roupas de forma consciente.')">Sobre</a>
-                    <a href="#"
-                        onclick="event.preventDefault(); showInfoDialog('Termos', 'Use a plataforma com respeito, publique informações verdadeiras e combine negociações com responsabilidade. Ao utilizar o aplicativo, você concorda com estas condições.')">Termos</a>
-                    <a href="#"
-                        onclick="event.preventDefault(); showInfoDialog('Privacidade', 'Seus dados são usados para manter sua conta, facilitar suas compras e melhorar sua experiência. Não compartilhamos suas informações pessoais sem necessidade ou autorização.')">Privacidade</a>
-                    <a onclick="showScreen('screen-suporte')">Suporte</a>
+                    <a href="#" data-info="Sobre"
+                        data-info-text="O Guarda Roupa Virtual conecta pessoas para comprar, vender, trocar e alugar roupas de forma consciente.">Sobre</a>
+                    <a href="#" data-info="Termos"
+                        data-info-text="Use a plataforma com respeito, publique informações verdadeiras e combine negociações com responsabilidade. Ao utilizar o aplicativo, você concorda com estas condições.">Termos</a>
+                    <a href="#" data-info="Privacidade"
+                        data-info-text="Seus dados são usados para manter sua conta, facilitar suas compras e melhorar sua experiência. Não compartilhamos suas informações pessoais sem necessidade ou autorização.">Privacidade</a>
+                    <a href="#" data-screen="screen-suporte">Suporte</a>
                 </div>
                 <p class="copy">© 2026 Fast Fashion</p>
             </footer>
@@ -209,18 +211,19 @@
         <main id="screen-catalogo" class="screen app-screen">
             <div class="page-title-row">
                 <h1 class="page-title">Catálogo</h1>
-                <button class="btn btn-outline btn-sm" onclick="toggleFilters()"><i class="fa-solid fa-sliders"></i>
+                <button class="btn btn-outline btn-sm" type="button" data-action="toggle-filters"><i
+                        class="fa-solid fa-sliders"></i>
                     Filtros</button>
             </div>
 
             <div class="search-bar">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="search-input" placeholder="Buscar peças..." oninput="applyFilters()" />
+                <input type="text" id="search-input" placeholder="Buscar peças..." />
             </div>
 
             <div id="filters-panel" class="filters-panel hidden">
                 <div class="filter-row">
-                    <select id="f-categoria" onchange="applyFilters()">
+                    <select id="f-categoria">
                         <option value="">Categoria</option>
                         <option>Camisetas</option>
                         <option>Calças</option>
@@ -229,7 +232,7 @@
                         <option>Vestidos</option>
                         <option>Outros</option>
                     </select>
-                    <select id="f-tamanho" onchange="applyFilters()">
+                    <select id="f-tamanho">
                         <option value="">Tamanho</option>
                         <option>P</option>
                         <option>M</option>
@@ -239,25 +242,23 @@
                         <option>40</option>
                         <option>42</option>
                     </select>
-                    <select id="f-modalidade" onchange="applyFilters()">
+                    <select id="f-modalidade">
                         <option value="">Modalidade</option>
                         <option value="venda">Comprar</option>
                         <option value="aluguel">Alugar</option>
                         <option value="troca">Trocar</option>
                     </select>
-                    <select id="f-estado" onchange="applyFilters()">
+                    <select id="f-estado">
                         <option value="">Estado</option>
                         <option>Novo</option>
                         <option>Excelente</option>
                         <option>Bom</option>
                         <option>Usado</option>
                     </select>
-                    <input type="number" id="f-preco-min" min="0" step="0.01" placeholder="Preço min"
-                        oninput="applyFilters()" />
-                    <input type="number" id="f-preco-max" min="0" step="0.01" placeholder="Preço max"
-                        oninput="applyFilters()" />
-                    <input type="search" id="f-local" placeholder="Região" oninput="applyFilters()" />
-                    <select id="f-ordenar" onchange="applyFilters()">
+                    <input type="number" id="f-preco-min" min="0" step="0.01" placeholder="Preço min" />
+                    <input type="number" id="f-preco-max" min="0" step="0.01" placeholder="Preço max" />
+                    <input type="search" id="f-local" placeholder="Região" />
+                    <select id="f-ordenar">
                         <option value="recentes">Mais recentes</option>
                         <option value="menor">Menor preço</option>
                         <option value="maior">Maior preço</option>
@@ -265,7 +266,7 @@
                         <option value="avaliados">Melhor avaliados</option>
                     </select>
                 </div>
-                <button class="btn btn-ghost btn-sm" onclick="clearFilters()">Limpar filtros</button>
+                <button class="btn btn-ghost btn-sm" type="button" data-action="clear-filters">Limpar filtros</button>
             </div>
 
             <p class="results-count" id="results-count"></p>
@@ -475,29 +476,30 @@
                 <div class="avatar" id="profile-avatar">C</div>
                 <label class="profile-photo-control" for="profile-photo">Alterar foto</label>
                 <input type="file" id="profile-photo" accept="image/*" hidden />
-                <h2 id="profile-name">Clayton</h2>
+                <h2 id="profile-name">Visitante</h2>
                 <p id="profile-city">Londrina, PR</p>
                 <div class="profile-rating" id="profile-rating">★ 4,9 <span class="seller-status hidden">· Vendedor
                         confiável</span></div>
             </div>
             <div class="profile-menu">
-                <a onclick="showScreen('screen-pedidos')"><i class="fa-solid fa-box"></i> Meus pedidos <i
+                <a href="#" data-screen="screen-pedidos"><i class="fa-solid fa-box"></i> Meus pedidos <i
                         class="fa-solid fa-chevron-right"></i></a>
-                <a onclick="showScreen('screen-favoritos')"><i class="fa-regular fa-heart"></i> Favoritos <i
+                <a href="#" data-screen="screen-favoritos"><i class="fa-regular fa-heart"></i> Favoritos <i
                         class="fa-solid fa-chevron-right"></i></a>
-                <a onclick="showScreen('screen-meus-produtos')"><i class="fa-solid fa-tags"></i> Meus produtos <i
+                <a href="#" data-screen="screen-meus-produtos"><i class="fa-solid fa-tags"></i> Meus produtos <i
                         class="fa-solid fa-chevron-right"></i></a>
-                <a onclick="showScreen('screen-suporte')"><i class="fa-solid fa-headset"></i> Suporte <i
+                <a href="#" data-screen="screen-suporte"><i class="fa-solid fa-headset"></i> Suporte <i
                         class="fa-solid fa-chevron-right"></i></a>
-                <a onclick="showScreen('screen-dados')"><i class="fa-solid fa-pen"></i> Editar dados pessoais <i
+                <a href="#" data-screen="screen-dados"><i class="fa-solid fa-pen"></i> Editar dados pessoais <i
                         class="fa-solid fa-chevron-right"></i></a>
-                <a onclick="showScreen('screen-tema')"><i class="fa-solid fa-palette"></i> Tema <i
+                <a href="#" data-screen="screen-tema"><i class="fa-solid fa-palette"></i> Tema <i
                         class="fa-solid fa-chevron-right"></i></a>
-                <a onclick="showScreen('screen-configuracoes')"><i class="fa-solid fa-gear"></i> Configurações <i
+                <a href="#" data-screen="screen-configuracoes"><i class="fa-solid fa-gear"></i> Configurações <i
                         class="fa-solid fa-chevron-right"></i></a>
-                <a onclick="showScreen('screen-cupons')"><i class="fa-solid fa-ticket"></i> Cupons e ofertas <i
+                <a href="#" data-screen="screen-cupons"><i class="fa-solid fa-ticket"></i> Cupons e ofertas <i
                         class="fa-solid fa-chevron-right"></i></a>
-                <a onclick="logout()" class="danger"><i class="fa-solid fa-right-from-bracket"></i> Sair da conta</a>
+                <a href="#" data-action="logout" class="danger"><i class="fa-solid fa-right-from-bracket"></i> Sair da
+                    conta</a>
             </div>
         </main>
 
@@ -519,9 +521,11 @@
             <h1 class="page-title">Cupons e ofertas</h1>
             <div class="coupon-list">
                 <div class="card coupon-card"><strong>BEMVINDO10</strong><span>10% de desconto na compra</span><button
-                        class="btn btn-outline btn-sm" onclick="useCoupon('BEMVINDO10')">Usar cupom</button></div>
+                        class="btn btn-outline btn-sm" type="button" data-action="use-coupon"
+                        data-coupon="BEMVINDO10">Usar cupom</button></div>
                 <div class="card coupon-card"><strong>MODACONSCIENTE</strong><span>R$ 15,00 de desconto</span><button
-                        class="btn btn-outline btn-sm" onclick="useCoupon('MODACONSCIENTE')">Usar cupom</button></div>
+                        class="btn btn-outline btn-sm" type="button" data-action="use-coupon"
+                        data-coupon="MODACONSCIENTE">Usar cupom</button></div>
             </div>
         </main>
 
@@ -577,15 +581,15 @@
 
         <!-- BOTTOM NAV -->
         <nav class="bottom-nav">
-            <a class="nav-item active" data-screen="screen-home" onclick="navTo(this,'screen-home')"><i
+            <a class="nav-item active" data-screen="screen-home" href="#"><i
                     class="fa-solid fa-house"></i><span>Início</span></a>
-            <a class="nav-item" data-screen="screen-catalogo" onclick="navTo(this,'screen-catalogo')"><i
+            <a class="nav-item" data-screen="screen-catalogo" href="#"><i
                     class="fa-solid fa-magnifying-glass"></i><span>Buscar</span></a>
-            <a href="#" class="nav-fab" aria-label="Publicar novo item"
-                onclick="event.preventDefault(); showScreen('screen-publicar')"><i class="fa-solid fa-plus"></i></a>
-            <a class="nav-item" data-screen="screen-pedidos" onclick="navTo(this,'screen-pedidos')"><i
+            <a href="#" class="nav-fab" aria-label="Publicar novo item" data-screen="screen-publicar"><i
+                    class="fa-solid fa-plus"></i></a>
+            <a class="nav-item" data-screen="screen-pedidos" href="#"><i
                     class="fa-regular fa-envelope"></i><span>Pedidos</span></a>
-            <a class="nav-item" data-screen="screen-perfil" onclick="navTo(this,'screen-perfil')"><i
+            <a class="nav-item" data-screen="screen-perfil" href="#"><i
                     class="fa-regular fa-user"></i><span>Perfil</span></a>
         </nav>
     </div>
@@ -593,24 +597,26 @@
     <aside id="side-menu" class="side-menu hidden">
         <div class="side-menu-header">
             <h3>Menu</h3>
-            <button class="close-panel" aria-label="Fechar menu" onclick="toggleMenu()">×</button>
+            <button class="close-panel" aria-label="Fechar menu" type="button" data-action="toggle-menu">×</button>
         </div>
         <nav class="side-menu-nav">
-            <button onclick="showScreen('screen-home'); toggleMenu();">Início</button>
-            <button onclick="showScreen('screen-catalogo'); toggleMenu();">Catálogo</button>
-            <button onclick="showScreen('screen-favoritos'); toggleMenu();">Favoritos</button>
-            <button onclick="showScreen('screen-pedidos'); toggleMenu();">Pedidos</button>
-            <button onclick="showScreen('screen-perfil'); toggleMenu();">Perfil</button>
-            <button onclick="showScreen('screen-suporte'); toggleMenu();">Suporte</button>
+            <button type="button" data-screen="screen-home" data-close-menu="true">Início</button>
+            <button type="button" data-screen="screen-catalogo" data-close-menu="true">Catálogo</button>
+            <button type="button" data-screen="screen-favoritos" data-close-menu="true">Favoritos</button>
+            <button type="button" data-screen="screen-pedidos" data-close-menu="true">Pedidos</button>
+            <button type="button" data-screen="screen-perfil" data-close-menu="true">Perfil</button>
+            <button type="button" data-screen="screen-suporte" data-close-menu="true">Suporte</button>
         </nav>
     </aside>
 
     <aside id="notification-panel" class="notification-panel hidden">
         <div class="panel-header">
             <h3>Notificações</h3>
-            <button class="close-panel" aria-label="Fechar notificações" onclick="toggleNotifications()">×</button>
+            <button class="close-panel" aria-label="Fechar notificações" type="button"
+                data-action="toggle-notifications">×</button>
         </div>
-        <button class="btn btn-ghost btn-sm notifications-read-all" type="button" onclick="markAllNotificationsRead()">
+        <button class="btn btn-ghost btn-sm notifications-read-all" type="button"
+            data-action="mark-all-notifications-read">
             Marcar todas como lidas
         </button>
         <div id="notifications-list"></div>
@@ -621,10 +627,10 @@
 
     <dialog id="info-dialog" class="info-dialog">
         <div class="info-dialog-content">
-            <button class="close-panel" type="button" aria-label="Fechar" onclick="closeInfoDialog()">×</button>
+            <button class="close-panel" type="button" aria-label="Fechar" data-action="close-info-dialog">×</button>
             <h2 id="info-dialog-title"></h2>
             <p id="info-dialog-message"></p>
-            <button class="btn btn-primary btn-full" type="button" onclick="closeInfoDialog()">Fechar</button>
+            <button class="btn btn-primary btn-full" type="button" data-action="close-info-dialog">Fechar</button>
         </div>
     </dialog>
 
