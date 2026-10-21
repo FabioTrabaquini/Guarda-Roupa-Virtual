@@ -1,35 +1,35 @@
 /* Estilos globais, componentes visuais, temas e ajustes responsivos do app. */
 :root {
-    --primary: #8B5CF6;
-    --primary-dark: #6D28D9;
-    --primary-light: #EDE9FE;
-    --lilac: #C4B5FD;
-    --bg: #F7F5FB;
-    --white: #FFFFFF;
-    --text: #1F1F2E;
-    --text-muted: #8A8A9E;
-    --border: #E8E5F0;
-    --green: #D1FAE5;
-    --green-text: #065F46;
+    --primary: #8b5cf6;
+    --primary-dark: #6d28d9;
+    --primary-light: #ede9fe;
+    --lilac: #c4b5fd;
+    --bg: #f7f5fb;
+    --white: #ffffff;
+    --text: #1f1f2e;
+    --text-muted: #8a8a9e;
+    --border: #e8e5f0;
+    --green: #d1fae5;
+    --green-text: #065f46;
     --radius: 16px;
-    --shadow: 0 4px 16px rgba(139, 92, 246, 0.10);
+    --shadow: 0 4px 16px rgba(139, 92, 246, 0.1);
 }
 
 body.theme-dark {
-    --primary: #A78BFA;
-    --primary-dark: #6D28D9;
-    --primary-light: #221B3A;
-    --lilac: #C4B5FD;
+    --primary: #a78bfa;
+    --primary-dark: #6d28d9;
+    --primary-light: #221b3a;
+    --lilac: #c4b5fd;
     --bg: #111625;
-    --white: #202A3F;
-    --text: #F7F7FA;
-    --text-muted: #ADABC2;
-    --border: #313A5B;
-    --green: #162F24;
-    --green-text: #A7F3D0;
-    --header-bg: #161B2C;
-    --surface: #202A3F;
-    --shadow: 0 4px 16px rgba(0, 0, 0, 0.30);
+    --white: #202a3f;
+    --text: #f7f7fa;
+    --text-muted: #adabc2;
+    --border: #313a5b;
+    --green: #162f24;
+    --green-text: #a7f3d0;
+    --header-bg: #161b2c;
+    --surface: #202a3f;
+    --shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 * {
@@ -39,7 +39,7 @@ body.theme-dark {
 }
 
 body {
-    font-family: 'Poppins', sans-serif;
+    font-family: "Poppins", sans-serif;
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
@@ -152,11 +152,16 @@ body.theme-dark .hero-text p {
 }
 
 body.theme-dark .promo-banner {
-    background: linear-gradient(120deg, var(--primary-light), #DDD1FE, var(--primary-dark));
+    background: linear-gradient(
+        120deg,
+        var(--primary-light),
+        #ddd1fe,
+        var(--primary-dark)
+    );
 }
 
 body.theme-dark .promo-banner h3 {
-    color: #F8F4FF;
+    color: #f8f4ff;
 }
 
 body.theme-dark .promo-banner p {
@@ -203,8 +208,8 @@ button:disabled {
 }
 
 .btn-danger {
-    background: #FEE2E2;
-    color: #B91C1C;
+    background: #fee2e2;
+    color: #b91c1c;
 }
 
 /* ============ TELAS ============ */
@@ -322,8 +327,8 @@ button:disabled {
 }
 
 .form-message.error {
-    background: #FEE2E2;
-    color: #B91C1C;
+    background: #fee2e2;
+    color: #b91c1c;
 }
 
 .hidden {
@@ -670,7 +675,7 @@ button:disabled {
     align-items: center;
     justify-content: center;
     font-size: 3.2rem;
-    background: #F1EEF9;
+    background: #f1eef9;
     position: relative;
 }
 
@@ -697,7 +702,7 @@ button:disabled {
 }
 
 .favorite-btn.active {
-    color: #EF4444;
+    color: #ef4444;
 }
 
 .product-body {
@@ -724,13 +729,13 @@ button:disabled {
 
 body.theme-dark .tag {
     background: var(--surface);
-    color: #EDE9FE;
+    color: #ede9fe;
     border: 1px solid var(--border);
 }
 
 .rating {
     font-size: 0.7rem;
-    color: #F59E0B;
+    color: #f59e0b;
     font-weight: 700;
 }
 
@@ -779,7 +784,7 @@ body.theme-dark .tag {
 }
 
 .product-meta span {
-    background: #F3F4F6;
+    background: #f3f4f6;
     border-radius: 999px;
     padding: 4px 7px;
 }
@@ -853,7 +858,7 @@ body.theme-dark .product-meta span {
 /* ============ DETALHES ============ */
 .detail-gallery,
 .details-hero {
-    background: #F1EEF9;
+    background: #f1eef9;
     border-radius: var(--radius);
     height: 300px;
     display: flex;
@@ -997,8 +1002,8 @@ body.theme-dark .product-meta span {
 .chat-bubble.seller {
     align-self: flex-start;
     border-radius: 14px 14px 14px 3px;
-    background: #E8F3EE;
-    color: #24513B;
+    background: #e8f3ee;
+    color: #24513b;
 }
 
 .chat-bubble p {
@@ -1063,7 +1068,7 @@ body.theme-dark .product-meta span {
     white-space: nowrap;
 }
 
-.message-conversation>i {
+.message-conversation > i {
     color: var(--text-muted);
     font-size: 0.75rem;
 }
@@ -1195,7 +1200,7 @@ body.theme-dark .product-meta span {
     width: 52px;
     height: 52px;
     border-radius: 12px;
-    background: #F1EEF9;
+    background: #f1eef9;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1229,7 +1234,7 @@ body.theme-dark .product-meta span {
     width: 64px;
     height: 64px;
     border-radius: 12px;
-    background: #F1EEF9;
+    background: #f1eef9;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1262,7 +1267,7 @@ body.theme-dark .product-meta span {
 .remove-btn {
     border: none;
     background: none;
-    color: #EF4444;
+    color: #ef4444;
     cursor: pointer;
     font-size: 1rem;
 }
@@ -1500,7 +1505,7 @@ body.theme-dark .product-meta span {
 }
 
 .profile-rating {
-    color: #F59E0B;
+    color: #f59e0b;
     font-size: 0.82rem;
     margin-top: 4px;
 }
@@ -1540,7 +1545,7 @@ body.theme-dark .product-meta span {
 
 .profile-menu a.danger,
 .profile-menu a.danger i {
-    color: #EF4444;
+    color: #ef4444;
 }
 
 .order-card {
@@ -1572,8 +1577,8 @@ body.theme-dark .product-meta span {
 }
 
 .status-transito {
-    background: #FEF3C7;
-    color: #92400E;
+    background: #fef3c7;
+    color: #92400e;
 }
 
 .status-processando {
@@ -1627,7 +1632,7 @@ body.theme-dark .product-meta span {
 }
 
 .testimonial .stars {
-    color: #F59E0B;
+    color: #f59e0b;
     margin-bottom: 6px;
 }
 
@@ -2092,7 +2097,7 @@ body.theme-dark .product-meta span {
 }
 
 .seller-reviews article strong {
-    color: #A16207;
+    color: #a16207;
     font-size: 0.78rem;
 }
 
@@ -2279,7 +2284,7 @@ body.theme-dark .product-meta span {
 }
 
 .order-review-saved {
-    color: #A16207;
+    color: #a16207;
     font-size: 0.8rem;
     margin-top: 12px;
 }

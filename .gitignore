@@ -1,5 +1,10 @@
-# Arquivos locais, banco de desenvolvimento e logs que nao devem ser versionados.
+# Dependencias, dados locais, configuracoes privadas e arquivos temporarios.
 node_modules/
 data/
 .DS_Store
+Thumbs.db
+*.log
 npm-debug.log*
+.env
+.env.*
+!.env.example

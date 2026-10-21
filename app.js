@@ -3,32 +3,27 @@
  * anuncios, checkout demonstrativo, pedidos e comunicacao com a API.
  */
 
-let PRODUCTS = [
-    { id: 1, nome: "Camisa Social Preta", emoji: "👔", categoria: "Camisetas", marca: "Reserva", tamanho: "M", cor: "Preto", estado: "Excelente", preco: 59.99, aluguel: null, troca: false, local: "Londrina, PR", vendedor: "Léo Pereira", rating: 4.8, pop: 120, desc: "Camisa social preta, semi nova, ideal para ocasiões formais." },
-    { id: 2, nome: "Calça Moletom Bench", emoji: "👖", categoria: "Calças", marca: "Bench", tamanho: "G", cor: "Preto", estado: "Excelente", preco: 89.90, aluguel: 19.90, troca: true, local: "Uraí, PR", vendedor: "Léo Pereira", rating: 4.9, pop: 200, desc: "Calça moletom preta em ótimo estado. Peça usada e muito bem cuidada. Perfeita para qualquer ocasião informal." },
-    { id: 3, nome: "Tênis Feminino KNW", emoji: "👟", categoria: "Calçados", marca: "KNW", tamanho: "38", cor: "Preto", estado: "Bom", preco: 79.99, aluguel: null, troca: false, local: "Londrina, PR", vendedor: "Ana Souza", rating: 4.7, pop: 95, desc: "Tênis feminino confortável, pouco uso." },
-    { id: 4, nome: "Tênis Masculino AIR", emoji: "👟", categoria: "Calçados", marca: "Nike", tamanho: "42", cor: "Preto", estado: "Excelente", preco: 199.90, aluguel: null, troca: true, local: "Santa Mariana, PR", vendedor: "Carlos M.", rating: 5.0, pop: 310, desc: "Tênis AIR original, super conservado." },
-    { id: 5, nome: "Casaco Jeans Oversized", emoji: "🧥", categoria: "Casacos", marca: "Levi's", tamanho: "GG", cor: "Azul", estado: "Bom", preco: 120.00, aluguel: 25.00, troca: true, local: "Londrina, PR", vendedor: "Maria F.", rating: 4.6, pop: 80, desc: "Casaco jeans estiloso, corte oversized." },
-    { id: 6, nome: "Vestido Festa Lilás", emoji: "👗", categoria: "Vestidos", marca: "Zara", tamanho: "P", cor: "Lilás", estado: "Novo", preco: 250.00, aluguel: 45.00, troca: false, local: "Cambé, PR", vendedor: "Julia R.", rating: 4.9, pop: 400, desc: "Vestido de festa lindíssimo, usado apenas uma vez. Ideal para aluguel!" },
-    { id: 7, nome: "Camiseta Básica Branca", emoji: "👕", categoria: "Camisetas", marca: "Hering", tamanho: "M", cor: "Branco", estado: "Novo", preco: 29.90, aluguel: null, troca: true, local: "Londrina, PR", vendedor: "Pedro L.", rating: 4.5, pop: 60, desc: "Camiseta básica nova, com etiqueta." },
-    { id: 8, nome: "Calça Cargo Verde", emoji: "👖", categoria: "Calças", marca: "C&A", tamanho: "40", cor: "Verde", estado: "Usado", preco: 45.00, aluguel: 12.00, troca: true, local: "Ibiporã, PR", vendedor: "Rafa T.", rating: 4.4, pop: 55, desc: "Calça cargo verde, confortável e com muito estilo para o dia a dia." }
-];
+let PRODUCTS = [];
 
 const TESTIMONIALS = [
-    { nome: "Renata", texto: "Consegui vender peça que estava guardada e ainda achei uma nova favorita!" },
-    { nome: "Mateus", texto: "A experiência de aluguel foi rápida e muito prática." },
-    { nome: "Aline", texto: "A plataforma é intuitiva e a comunidade é muito confiável." }
+    {
+        nome: "Renata",
+        texto: "Consegui vender peça que estava guardada e ainda achei uma nova favorita!",
+    },
+    {
+        nome: "Mateus",
+        texto: "A experiência de aluguel foi rápida e muito prática.",
+    },
+    {
+        nome: "Aline",
+        texto: "A plataforma é intuitiva e a comunidade é muito confiável.",
+    },
 ];
 
-PRODUCTS.forEach((product) => { product.stock = Number.isInteger(product.stock) ? product.stock : 1; });
-
 const state = {
-    favorites: [2, 6],
+    favorites: [],
     savedSearches: [],
-    cart: [
-        { id: 1, qty: 1 },
-        { id: 3, qty: 1 }
-    ],
+    cart: [],
     orders: [],
     publishedProducts: [],
     drafts: [],
@@ -38,7 +33,14 @@ const state = {
     notifications: [],
     pendingImages: [],
     appliedCoupon: null,
-    settings: { language: "pt-BR", currency: "BRL", payment: "Pix", notifications: true, seller: false, theme: "light" },
+    settings: {
+        language: "pt-BR",
+        currency: "BRL",
+        payment: "Pix",
+        notifications: true,
+        seller: false,
+        theme: "light",
+    },
     userData: {},
     currentUser: null,
     pendingOrderKey: null,
@@ -51,13 +53,18 @@ const state = {
         precoMin: "",
         precoMax: "",
         local: "",
-        ordenar: "recentes"
-    }
+        ordenar: "recentes",
+    },
 };
 
 const STORAGE_KEY = "guarda-roupa-virtual-state";
 const API_BASE_URL = "/api";
-const authScreens = ["screen-login", "screen-cadastro", "screen-recuperar"];
+const authScreens = [
+    "screen-login",
+    "screen-cadastro",
+    "screen-recuperar",
+    "screen-reset",
+];
 const appScreens = [
     "screen-home",
     "screen-catalogo",
@@ -76,7 +83,7 @@ const appScreens = [
     "screen-tema",
     "screen-suporte",
     "screen-configuracoes",
-    "screen-cupons"
+    "screen-cupons",
 ];
 let orderFilter = "todos";
 let editingProductId = null;
@@ -94,19 +101,22 @@ function activateUserData() {
             favorites: key === "visitor" ? [...state.favorites] : [],
             cart: key === "visitor" ? [...state.cart] : [],
             orders: key === "visitor" ? [...state.orders] : [],
-            publishedProducts: key === "visitor" ? [...state.publishedProducts] : [],
+            publishedProducts:
+                key === "visitor" ? [...state.publishedProducts] : [],
             drafts: key === "visitor" ? [...state.drafts] : [],
-            supportMessages: key === "visitor" ? [...state.supportMessages] : [],
-            savedSearches: key === "visitor" ? [...(state.savedSearches || [])] : [],
+            supportMessages:
+                key === "visitor" ? [...state.supportMessages] : [],
+            savedSearches:
+                key === "visitor" ? [...(state.savedSearches || [])] : [],
             notifications: key === "visitor" ? [...state.notifications] : [],
-            pendingOrderKey: key === "visitor" ? state.pendingOrderKey : null
+            pendingOrderKey: key === "visitor" ? state.pendingOrderKey : null,
         };
     }
     const data = state.userData[key];
     state.favorites = data.favorites || [];
     state.cart = data.cart || [];
-    state.orders = data.orders || [];
-    state.publishedProducts = data.publishedProducts || [];
+    state.orders = [];
+    state.publishedProducts = [];
     state.drafts = data.drafts || [];
     state.supportMessages = data.supportMessages || [];
     state.savedSearches = data.savedSearches || [];
@@ -114,23 +124,17 @@ function activateUserData() {
     state.pendingOrderKey = data.pendingOrderKey || null;
     state.conversations = [];
     updateMessageBadge();
-    state.publishedProducts.forEach((product) => {
-        product.ownerEmail ||= key;
-        product.stock = Number.isInteger(product.stock) ? product.stock : 1;
-    });
 }
 
 function persistUserData() {
     state.userData[currentUserKey()] = {
         favorites: state.favorites,
         cart: state.cart,
-        orders: state.orders,
-        publishedProducts: state.publishedProducts,
         drafts: state.drafts,
         supportMessages: state.supportMessages,
         savedSearches: state.savedSearches,
         notifications: state.notifications,
-        pendingOrderKey: state.pendingOrderKey
+        pendingOrderKey: state.pendingOrderKey,
     };
 }
 
@@ -138,11 +142,16 @@ async function apiRequest(endpoint, options = {}) {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
         credentials: "same-origin",
-        headers: { ...(options.headers || {}), ...(options.body ? { "Content-Type": "application/json" } : {}) }
+        headers: {
+            ...(options.headers || {}),
+            ...(options.body ? { "Content-Type": "application/json" } : {}),
+        },
     });
     const data = response.status === 204 ? null : await response.json();
     if (!response.ok) {
-        const error = new Error(data?.error || "Não foi possível concluir a solicitação.");
+        const error = new Error(
+            data?.error || "Não foi possível concluir a solicitação."
+        );
         error.status = response.status;
         throw error;
     }
@@ -159,18 +168,17 @@ async function restoreServerSession() {
 
 async function loadProductsFromApi() {
     try {
-        const apiProducts = (await apiRequest("/products")).map((product) => ({ ...product, categoria: normalizeCategory(product.categoria), stock: Number.isInteger(product.stock) ? product.stock : 1 }));
-        const knownProductIds = new Set(PRODUCTS.map((product) => Number(product.id)));
-        const productsById = new Map(apiProducts.map((product) => [Number(product.id), product]));
-        PRODUCTS = PRODUCTS.map((product) => ({ ...product, ...(productsById.get(product.id) || {}) }));
-        apiProducts.forEach((product) => {
-            if (!PRODUCTS.some((localProduct) => localProduct.id === Number(product.id))) {
-                PRODUCTS.push(product);
-            }
-            if (!knownProductIds.has(Number(product.id))) checkSavedSearchAlerts(product);
-        });
+        const apiProducts = (await apiRequest("/products")).map((product) => ({
+            ...product,
+            categoria: normalizeCategory(product.categoria),
+            stock: Number.isInteger(product.stock) ? product.stock : 1,
+        }));
+        PRODUCTS = apiProducts;
         if (state.currentUser?.id) {
-            state.publishedProducts = apiProducts.filter((product) => Number(product.ownerId) === Number(state.currentUser.id));
+            state.publishedProducts = apiProducts.filter(
+                (product) =>
+                    Number(product.ownerId) === Number(state.currentUser.id)
+            );
             saveState();
             renderMyProducts();
         }
@@ -178,7 +186,7 @@ async function loadProductsFromApi() {
         renderCatalog();
         renderFavorites();
     } catch {
-        showToast("Servidor indisponivel. Usando dados locais.");
+        showToast("Servidor indisponível. O catálogo não foi carregado.");
     }
 }
 
@@ -228,20 +236,11 @@ function safeStorageRemove(key) {
 function saveState() {
     persistUserData();
     const savedState = {
-        favorites: state.favorites,
-        cart: state.cart,
-        orders: state.orders,
-        publishedProducts: state.publishedProducts,
-        drafts: state.drafts,
-        supportMessages: state.supportMessages,
-        savedSearches: state.savedSearches,
         reviews: state.reviews,
-        notifications: state.notifications,
-        pendingOrderKey: state.pendingOrderKey,
         filters: state.filters,
         appliedCoupon: state.appliedCoupon,
         settings: state.settings,
-        userData: state.userData
+        userData: state.userData,
     };
 
     const serialized = JSON.stringify(savedState);
@@ -257,9 +256,9 @@ function saveState() {
                     ...((savedState.userData || {})[currentUserKey()] || {}),
                     notifications: [],
                     supportMessages: [],
-                    drafts: []
-                }
-            }
+                    drafts: [],
+                },
+            },
         };
         safeStorageWrite(STORAGE_KEY, JSON.stringify(reducedState));
     }
@@ -281,9 +280,65 @@ function loadState() {
         state.supportMessages = [];
         state.savedSearches = [];
         state.notifications = [];
-        state.publishedProducts = (state.publishedProducts || []).map((product) => ({ ...product, categoria: normalizeCategory(product.categoria) }));
-        state.settings = { language: "pt-BR", currency: "BRL", payment: "Pix", notifications: true, seller: false, ...state.settings };
-        state.userData = state.userData || {};
+        state.settings = {
+            language: "pt-BR",
+            currency: "BRL",
+            payment: "Pix",
+            notifications: true,
+            seller: false,
+            ...state.settings,
+        };
+        const storedUserData =
+            state.userData && typeof state.userData === "object"
+                ? state.userData
+                : {};
+        state.userData = Object.fromEntries(
+            Object.entries(storedUserData).map(([key, data]) => [
+                key,
+                {
+                    favorites: Array.isArray(data?.favorites)
+                        ? data.favorites
+                        : [],
+                    cart: Array.isArray(data?.cart) ? data.cart : [],
+                    drafts: Array.isArray(data?.drafts) ? data.drafts : [],
+                    supportMessages: Array.isArray(data?.supportMessages)
+                        ? data.supportMessages
+                        : [],
+                    savedSearches: Array.isArray(data?.savedSearches)
+                        ? data.savedSearches
+                        : [],
+                    notifications: Array.isArray(data?.notifications)
+                        ? data.notifications
+                        : [],
+                    pendingOrderKey: data?.pendingOrderKey || null,
+                },
+            ])
+        );
+        if (
+            !state.userData.visitor &&
+            (Array.isArray(savedState.favorites) ||
+                Array.isArray(savedState.cart))
+        ) {
+            state.userData.visitor = {
+                favorites: Array.isArray(savedState.favorites)
+                    ? savedState.favorites
+                    : [],
+                cart: Array.isArray(savedState.cart) ? savedState.cart : [],
+                drafts: Array.isArray(savedState.drafts)
+                    ? savedState.drafts
+                    : [],
+                supportMessages: Array.isArray(savedState.supportMessages)
+                    ? savedState.supportMessages
+                    : [],
+                savedSearches: Array.isArray(savedState.savedSearches)
+                    ? savedState.savedSearches
+                    : [],
+                notifications: Array.isArray(savedState.notifications)
+                    ? savedState.notifications
+                    : [],
+                pendingOrderKey: null,
+            };
+        }
         updateCurrency();
     } catch {
         safeStorageRemove(STORAGE_KEY);
@@ -301,20 +356,41 @@ function escapeHtml(value) {
 }
 
 function normalizeEmail(email) {
-    return String(email || "").trim().toLowerCase();
+    return String(email || "")
+        .trim()
+        .toLowerCase();
 }
 
 function normalizeCategory(category) {
-    const value = String(category || "").trim().toLowerCase();
+    const value = String(category || "")
+        .trim()
+        .toLowerCase();
     return value === "calca" || value === "calcas" ? "Calças" : category;
 }
 
 function categoryLabel(category) {
     const labels = {
-        "en-US": { Camisetas: "T-shirts", "Calças": "Pants", Calçados: "Shoes", Casacos: "Coats", Vestidos: "Dresses", Outros: "Other" },
-        es: { Camisetas: "Camisetas", "Calças": "Pantalones", Calçados: "Calzado", Casacos: "Abrigos", Vestidos: "Vestidos", Outros: "Otros" }
+        "en-US": {
+            Camisetas: "T-shirts",
+            Calças: "Pants",
+            Calçados: "Shoes",
+            Casacos: "Coats",
+            Vestidos: "Dresses",
+            Outros: "Other",
+        },
+        es: {
+            Camisetas: "Camisetas",
+            Calças: "Pantalones",
+            Calçados: "Calzado",
+            Casacos: "Abrigos",
+            Vestidos: "Vestidos",
+            Outros: "Otros",
+        },
     };
-    return labels[state.settings.language]?.[normalizeCategory(category)] || normalizeCategory(category);
+    return (
+        labels[state.settings.language]?.[normalizeCategory(category)] ||
+        normalizeCategory(category)
+    );
 }
 
 function applyLoggedUser() {
@@ -329,24 +405,324 @@ function applyLoggedUser() {
     if (firstname) firstname.textContent = firstName;
     if (profileName) profileName.textContent = name;
     if (profileCity && user?.cidade) profileCity.textContent = user.cidade;
-    document.querySelector(".seller-status")?.classList.toggle("hidden", state.settings.seller !== true);
+    document
+        .querySelector(".seller-status")
+        ?.classList.toggle("hidden", state.settings.seller !== true);
 }
 
 // IDIOMA, MOEDA E MENSAGENS DE INTERFACE
-let currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+let currency = new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+});
 
 const COUPONS = {
     BEMVINDO10: { discount: 0.1, label: "10% de desconto" },
-    MODACONSCIENTE: { discount: 15, label: "R$ 15,00 de desconto" }
+    MODACONSCIENTE: { discount: 15, label: "R$ 15,00 de desconto" },
 };
 
 const TRANSLATIONS = {
     "en-US": {
-        "Início": "Home", "Buscar": "Search", "Pedidos": "Orders", "Perfil": "Profile", "Catálogo": "Catalog", "Carrinho": "Cart", "Checkout": "Checkout", "Configurações": "Settings", "Cupons e ofertas": "Coupons and offers", "Editar dados pessoais": "Edit personal details", "Meu guarda-roupa": "My wardrobe", "Meus pedidos": "My orders", "Favoritos": "Favorites", "Suporte": "Support", "Sair da conta": "Log out", "Aplicar": "Apply", "Remover": "Remove", "Finalizar compra": "Checkout", "Confirmar pagamento": "Confirm payment", "Salvar configurações": "Save settings", "Processando": "Processing", "Enviado": "Shipped", "Recebido": "Received", "Avaliar": "Rate", "Rastrear pedido": "Track order", "Solicitar reembolso": "Request refund", "Avançar etapa": "Advance status", "Idioma": "Language", "Moeda de compra": "Shopping currency", "Forma de pagamento preferida": "Preferred payment method", "Alterar foto": "Change photo", "Cupom de desconto": "Discount coupon", "Subtotal": "Subtotal", "Frete": "Shipping", "Grátis": "Free", "E-mail": "Email", "Senha": "Password", "Esqueci minha senha": "Forgot my password", "Entrar": "Sign in", "Não tem conta?": "No account?", "Cadastre-se": "Sign up", "Entrar como visitante (demo)": "Enter as visitor (demo)", "Criar": "Create", "conta": "account", "Junte-se à moda consciente 🌱": "Join conscious fashion 🌱", "Cadastrar": "Register", "Já tem conta?": "Already have an account?", "Recuperar": "Recover", "senha": "password", "Enviaremos um link para seu e-mail.": "We will send a link to your email.", "Enviar link": "Send link", "Voltar ao login": "Back to sign in", "Compre, troque ou alugue de forma sustentável.": "Buy, trade or rent sustainably.", "Moda consciente faz a diferença!": "Conscious fashion makes a difference!", "Dê um novo destino às roupas e transforme o mundo.": "Give clothes a new purpose and transform the world.", "Saiba mais": "Learn more", "Categorias": "Categories", "Ver todas": "View all", "Destaques": "Highlights", "Mais recentes": "Most recent", "O que dizem sobre nós": "What people say about us", "Moda circular, consciente e acessível.": "Circular, conscious and accessible fashion.", "Sobre": "About", "Termos": "Terms", "Privacidade": "Privacy", "Filtros": "Filters", "Buscar peças...": "Search items...", "Categoria": "Category", "Tamanho": "Size", "Modalidade": "Listing type", "Comprar": "Buy", "Alugar": "Rent", "Trocar": "Trade", "Estado": "Condition", "Novo": "New", "Excelente": "Excellent", "Bom": "Good", "Usado": "Used", "Mais recentes": "Most recent", "Menor preço": "Lowest price", "Maior preço": "Highest price", "Mais populares": "Most popular", "Melhor avaliados": "Highest rated", "Limpar filtros": "Clear filters", "Detalhes": "Details", "Adicionar": "Add", "No carrinho": "In cart", "Adicionar ao carrinho": "Add to cart", "Favoritar": "Add to favorites", "Pedido enviado": "Order shipped", "Nova oferta": "New offer", "Troca aprovada": "Trade approved", "Seu carrinho está vazio.": "Your cart is empty.", "Resumo do pedido": "Order summary", "Itens": "Items", "Entrega": "Delivery", "Em 2 a 4 dias": "In 2 to 4 days", "Forma de pagamento": "Payment method", "Selecione": "Select", "Pix (simulação)": "Pix (simulation)", "Cartão (simulação)": "Card (simulation)", "Boleto (simulação)": "Bank slip (simulation)", "Dados para entrega": "Delivery details", "Complete seus dados antes de finalizar a compra.": "Complete your details before checkout.", "Nome completo": "Full name", "Telefone": "Phone", "CEP": "ZIP code", "Rua": "Street", "Número": "Number", "Bairro": "Neighborhood", "Cidade": "City", "Complemento": "Additional details", "UF": "State", "Cadastrar cartão para compras futuras": "Save card for future purchases", "Número do cartão": "Card number", "Nome no cartão": "Name on card", "Validade": "Expiration date", "CVV": "CVV", "Continuar para pagamento": "Continue to payment", "Publicar item": "List item", "Fotos do item": "Item photos", "Adicionar fotos": "Add photos", "Até 8 fotos": "Up to 8 photos", "Nome do item": "Item name", "Marca": "Brand", "Cor": "Color", "Condição": "Condition", "Descrição": "Description", "Venda": "Sale", "Aluguel (R$/dia)": "Rent (per day)", "Preço (R$)": "Price", "Localidade": "Location", "Salvar rascunho": "Save draft", "Informações": "Information", "Detalhes": "Details", "Revisão": "Review", "Meus pedidos": "My orders", "Vendedor confiável": "Trusted seller", "Configurações salvas!": "Settings saved!", "Cupom inválido ou expirado.": "Invalid or expired coupon.", "Aplicar cupom": "Apply coupon", "Mensagem": "Message", "Assunto": "Subject", "Enviar mensagem": "Send message", "Alterar foto": "Change photo", "Rastrear pedido": "Track order", "Solicitar reembolso": "Request refund"
+        Início: "Home",
+        Buscar: "Search",
+        Pedidos: "Orders",
+        Perfil: "Profile",
+        Catálogo: "Catalog",
+        Carrinho: "Cart",
+        Checkout: "Checkout",
+        Configurações: "Settings",
+        "Cupons e ofertas": "Coupons and offers",
+        "Editar dados pessoais": "Edit personal details",
+        "Meu guarda-roupa": "My wardrobe",
+        "Meus pedidos": "My orders",
+        Favoritos: "Favorites",
+        Suporte: "Support",
+        "Sair da conta": "Log out",
+        Aplicar: "Apply",
+        Remover: "Remove",
+        "Finalizar compra": "Checkout",
+        "Confirmar pagamento": "Confirm payment",
+        "Salvar configurações": "Save settings",
+        Processando: "Processing",
+        Enviado: "Shipped",
+        Recebido: "Received",
+        Avaliar: "Rate",
+        "Rastrear pedido": "Track order",
+        "Solicitar reembolso": "Request refund",
+        "Avançar etapa": "Advance status",
+        Idioma: "Language",
+        "Moeda de compra": "Shopping currency",
+        "Forma de pagamento preferida": "Preferred payment method",
+        "Alterar foto": "Change photo",
+        "Cupom de desconto": "Discount coupon",
+        Subtotal: "Subtotal",
+        Frete: "Shipping",
+        Grátis: "Free",
+        "E-mail": "Email",
+        Senha: "Password",
+        "Esqueci minha senha": "Forgot my password",
+        Entrar: "Sign in",
+        "Não tem conta?": "No account?",
+        "Cadastre-se": "Sign up",
+        "Entrar como visitante (demo)": "Enter as visitor (demo)",
+        Criar: "Create",
+        conta: "account",
+        "Junte-se à moda consciente 🌱": "Join conscious fashion 🌱",
+        Cadastrar: "Register",
+        "Já tem conta?": "Already have an account?",
+        Recuperar: "Recover",
+        senha: "password",
+        "Enviaremos um link para seu e-mail.":
+            "We will send a link to your email.",
+        "Enviar link": "Send link",
+        "Voltar ao login": "Back to sign in",
+        "Compre, troque ou alugue de forma sustentável.":
+            "Buy, trade or rent sustainably.",
+        "Moda consciente faz a diferença!":
+            "Conscious fashion makes a difference!",
+        "Dê um novo destino às roupas e transforme o mundo.":
+            "Give clothes a new purpose and transform the world.",
+        "Saiba mais": "Learn more",
+        Categorias: "Categories",
+        "Ver todas": "View all",
+        Destaques: "Highlights",
+        "Mais recentes": "Most recent",
+        "O que dizem sobre nós": "What people say about us",
+        "Moda circular, consciente e acessível.":
+            "Circular, conscious and accessible fashion.",
+        Sobre: "About",
+        Termos: "Terms",
+        Privacidade: "Privacy",
+        Filtros: "Filters",
+        "Buscar peças...": "Search items...",
+        Categoria: "Category",
+        Tamanho: "Size",
+        Modalidade: "Listing type",
+        Comprar: "Buy",
+        Alugar: "Rent",
+        Trocar: "Trade",
+        Estado: "Condition",
+        Novo: "New",
+        Excelente: "Excellent",
+        Bom: "Good",
+        Usado: "Used",
+        "Mais recentes": "Most recent",
+        "Menor preço": "Lowest price",
+        "Maior preço": "Highest price",
+        "Mais populares": "Most popular",
+        "Melhor avaliados": "Highest rated",
+        "Limpar filtros": "Clear filters",
+        Detalhes: "Details",
+        Adicionar: "Add",
+        "No carrinho": "In cart",
+        "Adicionar ao carrinho": "Add to cart",
+        Favoritar: "Add to favorites",
+        "Pedido enviado": "Order shipped",
+        "Nova oferta": "New offer",
+        "Troca aprovada": "Trade approved",
+        "Seu carrinho está vazio.": "Your cart is empty.",
+        "Resumo do pedido": "Order summary",
+        Itens: "Items",
+        Entrega: "Delivery",
+        "Em 2 a 4 dias": "In 2 to 4 days",
+        "Forma de pagamento": "Payment method",
+        Selecione: "Select",
+        "Pix (simulação)": "Pix (simulation)",
+        "Cartão (simulação)": "Card (simulation)",
+        "Boleto (simulação)": "Bank slip (simulation)",
+        "Dados para entrega": "Delivery details",
+        "Complete seus dados antes de finalizar a compra.":
+            "Complete your details before checkout.",
+        "Nome completo": "Full name",
+        Telefone: "Phone",
+        CEP: "ZIP code",
+        Rua: "Street",
+        Número: "Number",
+        Bairro: "Neighborhood",
+        Cidade: "City",
+        Complemento: "Additional details",
+        UF: "State",
+        "Cadastrar cartão para compras futuras":
+            "Save card for future purchases",
+        "Número do cartão": "Card number",
+        "Nome no cartão": "Name on card",
+        Validade: "Expiration date",
+        CVV: "CVV",
+        "Continuar para pagamento": "Continue to payment",
+        "Publicar item": "List item",
+        "Fotos do item": "Item photos",
+        "Adicionar fotos": "Add photos",
+        "Até 8 fotos": "Up to 8 photos",
+        "Nome do item": "Item name",
+        Marca: "Brand",
+        Cor: "Color",
+        Condição: "Condition",
+        Descrição: "Description",
+        Venda: "Sale",
+        "Aluguel (R$/dia)": "Rent (per day)",
+        "Preço (R$)": "Price",
+        Localidade: "Location",
+        "Salvar rascunho": "Save draft",
+        Informações: "Information",
+        Detalhes: "Details",
+        Revisão: "Review",
+        "Meus pedidos": "My orders",
+        "Vendedor confiável": "Trusted seller",
+        "Configurações salvas!": "Settings saved!",
+        "Cupom inválido ou expirado.": "Invalid or expired coupon.",
+        "Aplicar cupom": "Apply coupon",
+        Mensagem: "Message",
+        Assunto: "Subject",
+        "Enviar mensagem": "Send message",
+        "Alterar foto": "Change photo",
+        "Rastrear pedido": "Track order",
+        "Solicitar reembolso": "Request refund",
     },
     es: {
-        "Início": "Inicio", "Buscar": "Buscar", "Pedidos": "Pedidos", "Perfil": "Perfil", "Catálogo": "Catálogo", "Carrinho": "Carrito", "Checkout": "Pago", "Configurações": "Configuración", "Cupons e ofertas": "Cupones y ofertas", "Editar dados pessoais": "Editar datos personales", "Meu guarda-roupa": "Mi armario", "Meus pedidos": "Mis pedidos", "Favoritos": "Favoritos", "Suporte": "Soporte", "Sair da conta": "Cerrar sesión", "Aplicar": "Aplicar", "Remover": "Eliminar", "Finalizar compra": "Finalizar compra", "Confirmar pagamento": "Confirmar pago", "Salvar configurações": "Guardar configuración", "Processando": "Procesando", "Enviado": "Enviado", "Recebido": "Recibido", "Avaliar": "Evaluar", "Rastrear pedido": "Rastrear pedido", "Solicitar reembolso": "Solicitar reembolso", "Avançar etapa": "Avanzar etapa", "Idioma": "Idioma", "Moeda de compra": "Moneda de compra", "Forma de pagamento preferida": "Forma de pago preferida", "Alterar foto": "Cambiar foto", "Cupom de desconto": "Cupón de descuento", "Subtotal": "Subtotal", "Frete": "Envío", "Grátis": "Gratis", "E-mail": "Correo electrónico", "Senha": "Contraseña", "Esqueci minha senha": "Olvidé mi contraseña", "Entrar": "Entrar", "Não tem conta?": "¿No tienes cuenta?", "Cadastre-se": "Regístrate", "Entrar como visitante (demo)": "Entrar como visitante (demo)", "Criar": "Crear", "conta": "cuenta", "Junte-se à moda consciente 🌱": "Únete a la moda consciente 🌱", "Cadastrar": "Registrarse", "Já tem conta?": "¿Ya tienes una cuenta?", "Recuperar": "Recuperar", "senha": "contraseña", "Enviaremos um link para seu e-mail.": "Enviaremos un enlace a tu correo.", "Enviar link": "Enviar enlace", "Voltar ao login": "Volver al inicio", "Compre, troque ou alugue de forma sustentável.": "Compra, intercambia o alquila de forma sostenible.", "Moda consciente faz a diferença!": "¡La moda consciente marca la diferencia!", "Dê um novo destino às roupas e transforme o mundo.": "Da un nuevo destino a la ropa y transforma el mundo.", "Saiba mais": "Saber más", "Categorias": "Categorías", "Ver todas": "Ver todas", "Destaques": "Destacados", "Mais recentes": "Más recientes", "O que dizem sobre nós": "Lo que dicen de nosotros", "Moda circular, consciente e acessível.": "Moda circular, consciente y accesible.", "Sobre": "Acerca de", "Termos": "Términos", "Privacidade": "Privacidad", "Filtros": "Filtros", "Buscar peças...": "Buscar prendas...", "Categoria": "Categoría", "Tamanho": "Talla", "Modalidade": "Modalidad", "Comprar": "Comprar", "Alugar": "Alquilar", "Trocar": "Intercambiar", "Estado": "Estado", "Novo": "Nuevo", "Excelente": "Excelente", "Bom": "Bueno", "Usado": "Usado", "Mais recentes": "Más recientes", "Menor preço": "Precio más bajo", "Maior preço": "Precio más alto", "Mais populares": "Más populares", "Melhor avaliados": "Mejor valorados", "Limpar filtros": "Limpiar filtros", "Detalhes": "Detalles", "Adicionar": "Añadir", "No carrinho": "En el carrito", "Adicionar ao carrinho": "Añadir al carrito", "Favoritar": "Añadir a favoritos", "Pedido enviado": "Pedido enviado", "Nova oferta": "Nueva oferta", "Troca aprovada": "Intercambio aprobado", "Seu carrinho está vazio.": "Tu carrito está vacío.", "Resumo do pedido": "Resumen del pedido", "Itens": "Artículos", "Entrega": "Entrega", "Em 2 a 4 dias": "En 2 a 4 días", "Forma de pagamento": "Forma de pago", "Selecione": "Selecciona", "Dados para entrega": "Datos de entrega", "Complete seus dados antes de finalizar a compra.": "Completa tus datos antes de finalizar la compra.", "Nome completo": "Nombre completo", "Telefone": "Teléfono", "CEP": "Código postal", "Rua": "Calle", "Número": "Número", "Bairro": "Barrio", "Cidade": "Ciudad", "Complemento": "Complemento", "UF": "Estado", "Cadastrar cartão para compras futuras": "Guardar tarjeta para futuras compras", "Número do cartão": "Número de tarjeta", "Nome no cartão": "Nombre en la tarjeta", "Validade": "Vencimiento", "Continuar para pagamento": "Continuar al pago", "Publicar item": "Publicar artículo", "Fotos do item": "Fotos del artículo", "Adicionar fotos": "Añadir fotos", "Até 8 fotos": "Hasta 8 fotos", "Nome do item": "Nombre del artículo", "Marca": "Marca", "Cor": "Color", "Condição": "Condición", "Descrição": "Descripción", "Venda": "Venta", "Preço (R$)": "Precio", "Localidade": "Ubicación", "Salvar rascunho": "Guardar borrador", "Informações": "Información", "Revisão": "Revisión", "Vendedor confiável": "Vendedor confiable", "Configurações salvas!": "¡Configuración guardada!", "Cupom inválido ou expirado.": "Cupón inválido o caducado.", "Mensagem": "Mensaje", "Assunto": "Asunto", "Enviar mensagem": "Enviar mensaje"
-    }
+        Início: "Inicio",
+        Buscar: "Buscar",
+        Pedidos: "Pedidos",
+        Perfil: "Perfil",
+        Catálogo: "Catálogo",
+        Carrinho: "Carrito",
+        Checkout: "Pago",
+        Configurações: "Configuración",
+        "Cupons e ofertas": "Cupones y ofertas",
+        "Editar dados pessoais": "Editar datos personales",
+        "Meu guarda-roupa": "Mi armario",
+        "Meus pedidos": "Mis pedidos",
+        Favoritos: "Favoritos",
+        Suporte: "Soporte",
+        "Sair da conta": "Cerrar sesión",
+        Aplicar: "Aplicar",
+        Remover: "Eliminar",
+        "Finalizar compra": "Finalizar compra",
+        "Confirmar pagamento": "Confirmar pago",
+        "Salvar configurações": "Guardar configuración",
+        Processando: "Procesando",
+        Enviado: "Enviado",
+        Recebido: "Recibido",
+        Avaliar: "Evaluar",
+        "Rastrear pedido": "Rastrear pedido",
+        "Solicitar reembolso": "Solicitar reembolso",
+        "Avançar etapa": "Avanzar etapa",
+        Idioma: "Idioma",
+        "Moeda de compra": "Moneda de compra",
+        "Forma de pagamento preferida": "Forma de pago preferida",
+        "Alterar foto": "Cambiar foto",
+        "Cupom de desconto": "Cupón de descuento",
+        Subtotal: "Subtotal",
+        Frete: "Envío",
+        Grátis: "Gratis",
+        "E-mail": "Correo electrónico",
+        Senha: "Contraseña",
+        "Esqueci minha senha": "Olvidé mi contraseña",
+        Entrar: "Entrar",
+        "Não tem conta?": "¿No tienes cuenta?",
+        "Cadastre-se": "Regístrate",
+        "Entrar como visitante (demo)": "Entrar como visitante (demo)",
+        Criar: "Crear",
+        conta: "cuenta",
+        "Junte-se à moda consciente 🌱": "Únete a la moda consciente 🌱",
+        Cadastrar: "Registrarse",
+        "Já tem conta?": "¿Ya tienes una cuenta?",
+        Recuperar: "Recuperar",
+        senha: "contraseña",
+        "Enviaremos um link para seu e-mail.":
+            "Enviaremos un enlace a tu correo.",
+        "Enviar link": "Enviar enlace",
+        "Voltar ao login": "Volver al inicio",
+        "Compre, troque ou alugue de forma sustentável.":
+            "Compra, intercambia o alquila de forma sostenible.",
+        "Moda consciente faz a diferença!":
+            "¡La moda consciente marca la diferencia!",
+        "Dê um novo destino às roupas e transforme o mundo.":
+            "Da un nuevo destino a la ropa y transforma el mundo.",
+        "Saiba mais": "Saber más",
+        Categorias: "Categorías",
+        "Ver todas": "Ver todas",
+        Destaques: "Destacados",
+        "Mais recentes": "Más recientes",
+        "O que dizem sobre nós": "Lo que dicen de nosotros",
+        "Moda circular, consciente e acessível.":
+            "Moda circular, consciente y accesible.",
+        Sobre: "Acerca de",
+        Termos: "Términos",
+        Privacidade: "Privacidad",
+        Filtros: "Filtros",
+        "Buscar peças...": "Buscar prendas...",
+        Categoria: "Categoría",
+        Tamanho: "Talla",
+        Modalidade: "Modalidad",
+        Comprar: "Comprar",
+        Alugar: "Alquilar",
+        Trocar: "Intercambiar",
+        Estado: "Estado",
+        Novo: "Nuevo",
+        Excelente: "Excelente",
+        Bom: "Bueno",
+        Usado: "Usado",
+        "Mais recentes": "Más recientes",
+        "Menor preço": "Precio más bajo",
+        "Maior preço": "Precio más alto",
+        "Mais populares": "Más populares",
+        "Melhor avaliados": "Mejor valorados",
+        "Limpar filtros": "Limpiar filtros",
+        Detalhes: "Detalles",
+        Adicionar: "Añadir",
+        "No carrinho": "En el carrito",
+        "Adicionar ao carrinho": "Añadir al carrito",
+        Favoritar: "Añadir a favoritos",
+        "Pedido enviado": "Pedido enviado",
+        "Nova oferta": "Nueva oferta",
+        "Troca aprovada": "Intercambio aprobado",
+        "Seu carrinho está vazio.": "Tu carrito está vacío.",
+        "Resumo do pedido": "Resumen del pedido",
+        Itens: "Artículos",
+        Entrega: "Entrega",
+        "Em 2 a 4 dias": "En 2 a 4 días",
+        "Forma de pagamento": "Forma de pago",
+        Selecione: "Selecciona",
+        "Dados para entrega": "Datos de entrega",
+        "Complete seus dados antes de finalizar a compra.":
+            "Completa tus datos antes de finalizar la compra.",
+        "Nome completo": "Nombre completo",
+        Telefone: "Teléfono",
+        CEP: "Código postal",
+        Rua: "Calle",
+        Número: "Número",
+        Bairro: "Barrio",
+        Cidade: "Ciudad",
+        Complemento: "Complemento",
+        UF: "Estado",
+        "Cadastrar cartão para compras futuras":
+            "Guardar tarjeta para futuras compras",
+        "Número do cartão": "Número de tarjeta",
+        "Nome no cartão": "Nombre en la tarjeta",
+        Validade: "Vencimiento",
+        "Continuar para pagamento": "Continuar al pago",
+        "Publicar item": "Publicar artículo",
+        "Fotos do item": "Fotos del artículo",
+        "Adicionar fotos": "Añadir fotos",
+        "Até 8 fotos": "Hasta 8 fotos",
+        "Nome do item": "Nombre del artículo",
+        Marca: "Marca",
+        Cor: "Color",
+        Condição: "Condición",
+        Descrição: "Descripción",
+        Venda: "Venta",
+        "Preço (R$)": "Precio",
+        Localidade: "Ubicación",
+        "Salvar rascunho": "Guardar borrador",
+        Informações: "Información",
+        Revisão: "Revisión",
+        "Vendedor confiável": "Vendedor confiable",
+        "Configurações salvas!": "¡Configuración guardada!",
+        "Cupom inválido ou expirado.": "Cupón inválido o caducado.",
+        Mensagem: "Mensaje",
+        Assunto: "Asunto",
+        "Enviar mensagem": "Enviar mensaje",
+    },
 };
 
 function applyTranslations() {
@@ -356,14 +732,24 @@ function applyTranslations() {
     const translateValue = (value) => {
         const suffix = value.endsWith(" *") ? " *" : "";
         const baseValue = suffix ? value.slice(0, -2) : value;
-        const canonical = Object.keys(TRANSLATIONS).reduce((result, language) => {
-            const entries = TRANSLATIONS[language];
-            return Object.entries(entries).find(([, translated]) => translated === baseValue)?.[0] || result;
-        }, baseValue);
+        const canonical = Object.keys(TRANSLATIONS).reduce(
+            (result, language) => {
+                const entries = TRANSLATIONS[language];
+                return (
+                    Object.entries(entries).find(
+                        ([, translated]) => translated === baseValue
+                    )?.[0] || result
+                );
+            },
+            baseValue
+        );
         return `${dictionary?.[canonical] || canonical}${suffix}`;
     };
 
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT
+    );
     const textNodes = [];
     while (walker.nextNode()) textNodes.push(walker.currentNode);
     textNodes.forEach((node) => {
@@ -371,22 +757,34 @@ function applyTranslations() {
         if (!original) return;
 
         const translated = translateValue(original);
-        if (translated !== original) node.nodeValue = node.nodeValue.replace(original, translated);
+        if (translated !== original)
+            node.nodeValue = node.nodeValue.replace(original, translated);
     });
 
-    document.querySelectorAll("[placeholder], [aria-label]").forEach((element) => {
-        ["placeholder", "aria-label"].forEach((attribute) => {
-            const value = element.getAttribute(attribute);
-            if (!value) return;
-            const translated = translateValue(value);
-            if (translated !== value) element.setAttribute(attribute, translated);
+    document
+        .querySelectorAll("[placeholder], [aria-label]")
+        .forEach((element) => {
+            ["placeholder", "aria-label"].forEach((attribute) => {
+                const value = element.getAttribute(attribute);
+                if (!value) return;
+                const translated = translateValue(value);
+                if (translated !== value)
+                    element.setAttribute(attribute, translated);
+            });
         });
-    });
 }
 
 function updateCurrency() {
-    const locale = state.settings.currency === "USD" ? "en-US" : state.settings.currency === "EUR" ? "de-DE" : "pt-BR";
-    currency = new Intl.NumberFormat(locale, { style: "currency", currency: state.settings.currency });
+    const locale =
+        state.settings.currency === "USD"
+            ? "en-US"
+            : state.settings.currency === "EUR"
+              ? "de-DE"
+              : "pt-BR";
+    currency = new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency: state.settings.currency,
+    });
 }
 
 function applyTheme() {
@@ -397,7 +795,8 @@ function applyTheme() {
 
 function handleTheme(event) {
     event.preventDefault();
-    const selectedTheme = document.getElementById("theme-mode")?.value || "light";
+    const selectedTheme =
+        document.getElementById("theme-mode")?.value || "light";
     state.settings.theme = selectedTheme;
 
     const settingsTheme = document.getElementById("setting-theme");
@@ -420,7 +819,10 @@ function showToast(message) {
     toast.textContent = message;
     toast.classList.add("show");
     clearTimeout(showToast.timeoutId);
-    showToast.timeoutId = setTimeout(() => toast.classList.remove("show"), 2200);
+    showToast.timeoutId = setTimeout(
+        () => toast.classList.remove("show"),
+        2200
+    );
 }
 
 function showInfoDialog(title, message) {
@@ -474,7 +876,9 @@ function updateNotificationBadge() {
     const badge = document.getElementById("notification-count");
     if (!badge) return;
 
-    const unread = state.notifications.filter((notification) => !notification.read).length;
+    const unread = state.notifications.filter(
+        (notification) => !notification.read
+    ).length;
     badge.textContent = String(unread);
     badge.classList.toggle("hidden", unread < 1);
 }
@@ -485,17 +889,29 @@ function renderNotifications() {
     if (!container) return;
 
     const notifications = state.notifications;
-    container.innerHTML = notifications.length ? notifications.map((notification) => `
+    container.innerHTML = notifications.length
+        ? notifications
+              .map(
+                  (notification) => `
         <div class="notification-item ${notification.read ? "" : "unread"}" ${notification.productId ? `data-action="open-notification-product" data-id="${Number(notification.productId)}" role="button" tabindex="0"` : ""}>
             <strong>${escapeHtml(notification.title)}</strong>
             <span>${escapeHtml(notification.message)}</span>
         </div>
-    `).join("") : '<p class="empty-state">Nenhuma notificação nova.</p>';
+    `
+              )
+              .join("")
+        : '<p class="empty-state">Nenhuma notificação nova.</p>';
     updateNotificationBadge();
 }
 
 function addNotification(title, message, metadata = {}) {
-    state.notifications.unshift({ title, message, ...metadata, read: false, createdAt: new Date().toISOString() });
+    state.notifications.unshift({
+        title,
+        message,
+        ...metadata,
+        read: false,
+        createdAt: new Date().toISOString(),
+    });
     saveState();
     renderNotifications();
 }
@@ -535,9 +951,13 @@ function openProductDetails(productId, options = {}) {
 }
 
 function productVisual(product, className) {
-    const image = product.image && /^(data:image\/|https?:\/\/)/.test(product.image)
-        ? `<img class="${className}" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.nome)}" loading="lazy" decoding="async" />`
-        : product.emoji;
+    const image =
+        product.image &&
+        /^(data:image\/|https?:\/\/|\/(?:uploads|imagens)\/)/.test(
+            product.image
+        )
+            ? `<img class="${className}" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.nome)}" loading="lazy" decoding="async" />`
+            : product.emoji;
     return image;
 }
 
@@ -549,71 +969,115 @@ async function prepareProductImage(file) {
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(originalWidth * scale);
     canvas.height = Math.round(originalHeight * scale);
-    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    canvas
+        .getContext("2d")
+        .drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     bitmap.close();
     const sample = document.createElement("canvas");
     sample.width = 32;
     sample.height = 32;
     const sampleContext = sample.getContext("2d", { willReadFrequently: true });
     sampleContext.drawImage(canvas, 0, 0, sample.width, sample.height);
-    const pixels = sampleContext.getImageData(0, 0, sample.width, sample.height).data;
+    const pixels = sampleContext.getImageData(
+        0,
+        0,
+        sample.width,
+        sample.height
+    ).data;
     const luminance = [];
     for (let index = 0; index < pixels.length; index += 4) {
-        luminance.push(0.2126 * pixels[index] + 0.7152 * pixels[index + 1] + 0.0722 * pixels[index + 2]);
+        luminance.push(
+            0.2126 * pixels[index] +
+                0.7152 * pixels[index + 1] +
+                0.0722 * pixels[index + 2]
+        );
     }
-    const brightness = luminance.reduce((sum, value) => sum + value, 0) / luminance.length;
-    const contrast = Math.sqrt(luminance.reduce((sum, value) => sum + (value - brightness) ** 2, 0) / luminance.length);
+    const brightness =
+        luminance.reduce((sum, value) => sum + value, 0) / luminance.length;
+    const contrast = Math.sqrt(
+        luminance.reduce((sum, value) => sum + (value - brightness) ** 2, 0) /
+            luminance.length
+    );
     return {
         src: canvas.toDataURL("image/jpeg", 0.62),
         originalWidth,
         originalHeight,
         smallFile: file.size < 60 * 1024,
         brightness,
-        contrast
+        contrast,
     };
 }
 
 function updateSeo(screenId = "screen-home", product = null) {
     const baseTitle = "Guarda Roupa Virtual | Moda circular";
-    const title = product ? `${product.nome} | Guarda Roupa Virtual` : screenId === "screen-catalogo" ? "Catálogo de roupas | Guarda Roupa Virtual" : baseTitle;
-    const description = product?.desc || "Compre, troque ou alugue roupas de forma consciente no Guarda Roupa Virtual.";
+    const title = product
+        ? `${product.nome} | Guarda Roupa Virtual`
+        : screenId === "screen-catalogo"
+          ? "Catálogo de roupas | Guarda Roupa Virtual"
+          : baseTitle;
+    const description =
+        product?.desc ||
+        "Compre, troque ou alugue roupas de forma consciente no Guarda Roupa Virtual.";
     const canonical = new URL(window.location.href);
     canonical.hash = "";
 
     document.title = title;
-    document.querySelector('meta[name="description"]')?.setAttribute("content", description);
-    document.querySelector('meta[property="og:title"]')?.setAttribute("content", title);
-    document.querySelector('meta[property="og:description"]')?.setAttribute("content", description);
-    document.querySelector('link[rel="canonical"]')?.setAttribute("href", canonical.href);
+    document
+        .querySelector('meta[name="description"]')
+        ?.setAttribute("content", description);
+    document
+        .querySelector('meta[property="og:title"]')
+        ?.setAttribute("content", title);
+    document
+        .querySelector('meta[property="og:description"]')
+        ?.setAttribute("content", description);
+    document
+        .querySelector('link[rel="canonical"]')
+        ?.setAttribute("href", canonical.href);
 
-    const structuredData = product ? {
-        "@context": "https://schema.org",
-        "@type": "Product",
-        name: product.nome,
-        description,
-        category: product.categoria,
-        image: product.image && /^(https?:\/\/)/.test(product.image) ? [product.image] : undefined,
-        brand: product.marca ? { "@type": "Brand", name: product.marca } : undefined,
-        offers: isForSale(product) ? {
-            "@type": "Offer",
-            priceCurrency: "BRL",
-            price: Number(product.preco).toFixed(2),
-            availability: Number(product.stock) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-            url: canonical.href
-        } : undefined,
-        aggregateRating: product.rating ? {
-            "@type": "AggregateRating",
-            ratingValue: Number(product.rating),
-            bestRating: 5,
-            ratingCount: Math.max(1, Number(product.pop) || 1)
-        } : undefined
-    } : {
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        name: "Guarda Roupa Virtual",
-        description: "Marketplace de moda circular para comprar, trocar e alugar roupas.",
-        url: canonical.href
-    };
+    const structuredData = product
+        ? {
+              "@context": "https://schema.org",
+              "@type": "Product",
+              name: product.nome,
+              description,
+              category: product.categoria,
+              image:
+                  product.image && /^(https?:\/\/)/.test(product.image)
+                      ? [product.image]
+                      : undefined,
+              brand: product.marca
+                  ? { "@type": "Brand", name: product.marca }
+                  : undefined,
+              offers: isForSale(product)
+                  ? {
+                        "@type": "Offer",
+                        priceCurrency: "BRL",
+                        price: Number(product.preco).toFixed(2),
+                        availability:
+                            Number(product.stock) > 0
+                                ? "https://schema.org/InStock"
+                                : "https://schema.org/OutOfStock",
+                        url: canonical.href,
+                    }
+                  : undefined,
+              aggregateRating: product.rating
+                  ? {
+                        "@type": "AggregateRating",
+                        ratingValue: Number(product.rating),
+                        bestRating: 5,
+                        ratingCount: Math.max(1, Number(product.pop) || 1),
+                    }
+                  : undefined,
+          }
+        : {
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "Guarda Roupa Virtual",
+              description:
+                  "Marketplace de moda circular para comprar, trocar e alugar roupas.",
+              url: canonical.href,
+          };
 
     const jsonLd = document.getElementById("structured-data");
     if (jsonLd) jsonLd.textContent = JSON.stringify(structuredData);
@@ -621,7 +1085,13 @@ function updateSeo(screenId = "screen-home", product = null) {
 
 function isForSale(product) {
     const price = Number(product?.preco);
-    return product?.preco !== null && product?.preco !== undefined && product?.preco !== "" && Number.isFinite(price) && price > 0;
+    return (
+        product?.preco !== null &&
+        product?.preco !== undefined &&
+        product?.preco !== "" &&
+        Number.isFinite(price) &&
+        price > 0
+    );
 }
 
 function buildProductMeta(product, stock) {
@@ -629,16 +1099,23 @@ function buildProductMeta(product, stock) {
         escapeHtml(product.estado),
         escapeHtml(product.tamanho),
         escapeHtml(product.cor),
-        stock > 0 ? `${stock} disponível${stock === 1 ? "" : "is"}` : "Indisponível"
+        stock > 0
+            ? `${stock} disponível${stock === 1 ? "" : "is"}`
+            : "Indisponível",
     ];
 
-    return meta.slice(0, 3).map((item) => `<span>${item}</span>`).join("");
+    return meta
+        .slice(0, 3)
+        .map((item) => `<span>${item}</span>`)
+        .join("");
 }
 
 function buildProductCard(product) {
     const inFavorites = state.favorites.includes(product.id);
     const inCart = state.cart.some((item) => item.id === product.id);
-    const isOwner = product.ownerEmail && product.ownerEmail === normalizeEmail(state.currentUser?.email);
+    const isOwner =
+        product.ownerEmail &&
+        product.ownerEmail === normalizeEmail(state.currentUser?.email);
     const stock = Number.isInteger(product.stock) ? product.stock : 1;
 
     return `
@@ -676,45 +1153,85 @@ function renderCategories() {
     const container = document.getElementById("categories-list");
     if (!container) return;
 
-    const categories = [...new Set(PRODUCTS.map((product) => normalizeCategory(product.categoria)))];
-    container.innerHTML = categories.map((categoria) => `
+    const categories = [
+        ...new Set(
+            PRODUCTS.map((product) => normalizeCategory(product.categoria))
+        ),
+    ];
+    container.innerHTML = categories
+        .map(
+            (categoria) => `
         <button class="category-pill" data-action="filter-category" data-category="${categoria}">
             ${escapeHtml(categoryLabel(categoria))}
         </button>
-    `).join("");
+    `
+        )
+        .join("");
 }
 
 function renderTestimonials() {
     const container = document.getElementById("testimonials");
     if (!container) return;
 
-    container.innerHTML = TESTIMONIALS.map((item) => `
+    container.innerHTML = TESTIMONIALS.map(
+        (item) => `
         <div class="testimonial">
             <div class="stars">★★★★★</div>
             <p>“${item.texto}”</p>
             <strong>${item.nome}</strong>
         </div>
-    `).join("");
+    `
+    ).join("");
 }
 
 function getFilteredProducts() {
-    const { search, categoria, tamanho, modalidade, estado, precoMin, precoMax, local, ordenar } = state.filters;
+    const {
+        search,
+        categoria,
+        tamanho,
+        modalidade,
+        estado,
+        precoMin,
+        precoMax,
+        local,
+        ordenar,
+    } = state.filters;
 
     let result = [...PRODUCTS].filter((product) => {
-        const matchesSearch = !search || product.nome.toLowerCase().includes(search.toLowerCase()) || String(product.desc || "").toLowerCase().includes(search.toLowerCase());
+        const matchesSearch =
+            !search ||
+            product.nome.toLowerCase().includes(search.toLowerCase()) ||
+            String(product.desc || "")
+                .toLowerCase()
+                .includes(search.toLowerCase());
         const matchesCategoria = !categoria || product.categoria === categoria;
         const matchesTamanho = !tamanho || product.tamanho === tamanho;
         const matchesEstado = !estado || product.estado === estado;
-        const matchesMinPrice = !precoMin || Number(product.preco) >= Number(precoMin);
-        const matchesMaxPrice = !precoMax || Number(product.preco) <= Number(precoMax);
-        const matchesLocal = !local || String(product.local || "").toLowerCase().includes(local.toLowerCase());
+        const matchesMinPrice =
+            !precoMin || Number(product.preco) >= Number(precoMin);
+        const matchesMaxPrice =
+            !precoMax || Number(product.preco) <= Number(precoMax);
+        const matchesLocal =
+            !local ||
+            String(product.local || "")
+                .toLowerCase()
+                .includes(local.toLowerCase());
 
         let matchesModalidade = true;
         if (modalidade === "venda") matchesModalidade = isForSale(product);
         if (modalidade === "aluguel") matchesModalidade = !!product.aluguel;
         if (modalidade === "troca") matchesModalidade = !!product.troca;
 
-        return matchesSearch && matchesCategoria && matchesTamanho && matchesEstado && matchesModalidade && matchesMinPrice && matchesMaxPrice && matchesLocal;
+        return (
+            matchesSearch &&
+            matchesCategoria &&
+            matchesTamanho &&
+            matchesEstado &&
+            matchesModalidade &&
+            matchesMinPrice &&
+            matchesMaxPrice &&
+            matchesLocal
+        );
     });
 
     switch (ordenar) {
@@ -746,8 +1263,12 @@ function renderHome() {
     const homeProductsNode = document.getElementById("home-products");
     const recentNode = document.getElementById("home-recent");
 
-    if (homeProductsNode) homeProductsNode.innerHTML = homeProducts.map(buildProductCard).join("");
-    if (recentNode) recentNode.innerHTML = recentProducts.map(buildProductCard).join("");
+    if (homeProductsNode)
+        homeProductsNode.innerHTML = homeProducts
+            .map(buildProductCard)
+            .join("");
+    if (recentNode)
+        recentNode.innerHTML = recentProducts.map(buildProductCard).join("");
 
     renderImpactSummary();
     renderCategories();
@@ -760,7 +1281,9 @@ function renderCatalog() {
     if (!container) return;
 
     const filtered = getFilteredProducts();
-    container.innerHTML = filtered.length ? filtered.map(buildProductCard).join("") : "<p class='empty-state'>Nenhuma peça encontrada com esses filtros.</p>";
+    container.innerHTML = filtered.length
+        ? filtered.map(buildProductCard).join("")
+        : "<p class='empty-state'>Nenhuma peça encontrada com esses filtros.</p>";
 
     if (counter) counter.textContent = `${filtered.length} itens encontrados`;
     renderSavedSearches();
@@ -769,18 +1292,32 @@ function renderCatalog() {
 function getAllLocalOrders() {
     const ordersByOwner = new Map();
     Object.entries(state.userData || {}).forEach(([owner, userData]) => {
-        (userData.orders || []).forEach((order) => ordersByOwner.set(`${owner}:${order.id}`, order));
+        (userData.orders || []).forEach((order) =>
+            ordersByOwner.set(`${owner}:${order.id}`, order)
+        );
     });
     if (!state.userData?.[currentUserKey()]) {
-        state.orders.forEach((order) => ordersByOwner.set(`${currentUserKey()}:${order.id}`, order));
+        state.orders.forEach((order) =>
+            ordersByOwner.set(`${currentUserKey()}:${order.id}`, order)
+        );
     }
     return [...ordersByOwner.values()];
 }
 
 function getCompletedReuseCount() {
     return getAllLocalOrders()
-        .filter((order) => Number(order.stage) >= 3 || order.status === "entregue")
-        .reduce((total, order) => total + (order.items || []).reduce((quantity, item) => quantity + Number(item.qty || 1), 0), 0);
+        .filter(
+            (order) => Number(order.stage) >= 3 || order.status === "entregue"
+        )
+        .reduce(
+            (total, order) =>
+                total +
+                (order.items || []).reduce(
+                    (quantity, item) => quantity + Number(item.qty || 1),
+                    0
+                ),
+            0
+        );
 }
 
 function renderImpactSummary() {
@@ -801,13 +1338,20 @@ function renderImpactSummary() {
 
 function saveCurrentSearch() {
     const filters = { ...state.filters };
-    if (!Object.values(filters).some((value) => value && value !== "recentes")) {
+    if (
+        !Object.values(filters).some((value) => value && value !== "recentes")
+    ) {
         showToast("Defina ao menos um filtro antes de salvar a busca.");
         return;
     }
     const id = `${Date.now()}`;
-    const label = [filters.search, filters.categoria, filters.tamanho, filters.local].filter(Boolean).join(" · ") || "Busca com filtros";
-    const alertedProductIds = PRODUCTS.filter((product) => productMatchesSearchFilters(product, filters)).map((product) => product.id);
+    const label =
+        [filters.search, filters.categoria, filters.tamanho, filters.local]
+            .filter(Boolean)
+            .join(" · ") || "Busca com filtros";
+    const alertedProductIds = PRODUCTS.filter((product) =>
+        productMatchesSearchFilters(product, filters)
+    ).map((product) => product.id);
     state.savedSearches.unshift({ id, label, filters, alertedProductIds });
     saveState();
     renderSavedSearches();
@@ -817,16 +1361,24 @@ function saveCurrentSearch() {
 function renderSavedSearches() {
     const container = document.getElementById("saved-searches-list");
     if (!container) return;
-    container.innerHTML = state.savedSearches.length ? state.savedSearches.map((search) => `
+    container.innerHTML = state.savedSearches.length
+        ? state.savedSearches
+              .map(
+                  (search) => `
         <div class="saved-search-row">
             <button class="saved-search-apply" data-action="apply-saved-search" data-id="${escapeHtml(search.id)}">${escapeHtml(search.label)}</button>
             <button class="icon-btn" data-action="delete-saved-search" data-id="${escapeHtml(search.id)}" aria-label="Excluir busca salva" title="Excluir busca salva"><i class="fa-solid fa-trash"></i></button>
         </div>
-    `).join("") : '<p class="empty-state">Buscas salvas aparecem aqui.</p>';
+    `
+              )
+              .join("")
+        : '<p class="empty-state">Buscas salvas aparecem aqui.</p>';
 }
 
 function applySavedSearch(searchId) {
-    const search = state.savedSearches.find((item) => item.id === String(searchId));
+    const search = state.savedSearches.find(
+        (item) => item.id === String(searchId)
+    );
     if (!search) return;
     state.filters = { ...state.filters, ...search.filters };
     fillCatalogFilters();
@@ -836,9 +1388,15 @@ function applySavedSearch(searchId) {
 
 function fillCatalogFilters() {
     const values = {
-        "search-input": "search", "f-categoria": "categoria", "f-tamanho": "tamanho",
-        "f-modalidade": "modalidade", "f-estado": "estado", "f-preco-min": "precoMin",
-        "f-preco-max": "precoMax", "f-local": "local", "f-ordenar": "ordenar"
+        "search-input": "search",
+        "f-categoria": "categoria",
+        "f-tamanho": "tamanho",
+        "f-modalidade": "modalidade",
+        "f-estado": "estado",
+        "f-preco-min": "precoMin",
+        "f-preco-max": "precoMax",
+        "f-local": "local",
+        "f-ordenar": "ordenar",
     };
     Object.entries(values).forEach(([id, key]) => {
         const field = document.getElementById(id);
@@ -848,32 +1406,67 @@ function fillCatalogFilters() {
 
 function checkSavedSearchAlerts(product) {
     state.savedSearches.forEach((search) => {
-        const matches = productMatchesSearchFilters(product, search.filters || {});
+        const matches = productMatchesSearchFilters(
+            product,
+            search.filters || {}
+        );
         if (matches && !(search.alertedProductIds || []).includes(product.id)) {
-            search.alertedProductIds = [...(search.alertedProductIds || []), product.id];
-            addNotification("Peça compatível com sua busca", `${product.nome} combina com “${search.label}”.`, { type: "saved-search", productId: product.id });
+            search.alertedProductIds = [
+                ...(search.alertedProductIds || []),
+                product.id,
+            ];
+            addNotification(
+                "Peça compatível com sua busca",
+                `${product.nome} combina com “${search.label}”.`,
+                { type: "saved-search", productId: product.id }
+            );
         }
     });
 }
 
 function productMatchesSearchFilters(product, filters) {
-    return (!filters.search || `${product.nome} ${product.desc || ""}`.toLowerCase().includes(filters.search.toLowerCase()))
-        && (!filters.categoria || normalizeCategory(product.categoria) === normalizeCategory(filters.categoria))
-        && (!filters.tamanho || product.tamanho === filters.tamanho)
-        && (!filters.estado || product.estado === filters.estado)
-        && (!filters.local || String(product.local || "").toLowerCase().includes(filters.local.toLowerCase()))
-        && (!filters.precoMin || isForSale(product) && Number(product.preco) >= Number(filters.precoMin))
-        && (!filters.precoMax || isForSale(product) && Number(product.preco) <= Number(filters.precoMax))
-        && (!filters.modalidade || filters.modalidade === "venda" && isForSale(product) || filters.modalidade === "aluguel" && !!product.aluguel || filters.modalidade === "troca" && !!product.troca);
+    return (
+        (!filters.search ||
+            `${product.nome} ${product.desc || ""}`
+                .toLowerCase()
+                .includes(filters.search.toLowerCase())) &&
+        (!filters.categoria ||
+            normalizeCategory(product.categoria) ===
+                normalizeCategory(filters.categoria)) &&
+        (!filters.tamanho || product.tamanho === filters.tamanho) &&
+        (!filters.estado || product.estado === filters.estado) &&
+        (!filters.local ||
+            String(product.local || "")
+                .toLowerCase()
+                .includes(filters.local.toLowerCase())) &&
+        (!filters.precoMin ||
+            (isForSale(product) &&
+                Number(product.preco) >= Number(filters.precoMin))) &&
+        (!filters.precoMax ||
+            (isForSale(product) &&
+                Number(product.preco) <= Number(filters.precoMax))) &&
+        (!filters.modalidade ||
+            (filters.modalidade === "venda" && isForSale(product)) ||
+            (filters.modalidade === "aluguel" && !!product.aluguel) ||
+            (filters.modalidade === "troca" && !!product.troca))
+    );
 }
 
 function renderFavorites() {
     const container = document.getElementById("fav-products");
     if (!container) return;
 
-    const sharedIds = new URLSearchParams(window.location.search).get("wishlist")?.split(",").map(Number).filter(Number.isFinite);
-    const favorites = PRODUCTS.filter((product) => (sharedIds ? sharedIds : state.favorites).includes(Number(product.id)));
-    container.innerHTML = favorites.length ? favorites.map(buildProductCard).join("") : "<p class='empty-state'>Você ainda não marcou nenhum favorito.</p>";
+    const sharedIds = new URLSearchParams(window.location.search)
+        .get("wishlist")
+        ?.split(",")
+        .map(Number)
+        .filter(Number.isFinite);
+    const favorites = PRODUCTS.filter((product) =>
+        (sharedIds ? sharedIds : state.favorites).includes(Number(product.id))
+    );
+    container.innerHTML = favorites.length
+        ? favorites.map(buildProductCard).join("")
+        : "<p class='empty-state'>Você ainda não marcou nenhum favorito.</p>";
 }
 
 async function shareWishlist() {
@@ -886,28 +1479,50 @@ async function shareWishlist() {
     link.hash = "";
     link.searchParams.set("wishlist", state.favorites.join(","));
     try {
-        if (navigator.share) await navigator.share({ title: "Minha lista de favoritos", url: link.href });
+        if (navigator.share)
+            await navigator.share({
+                title: "Minha lista de favoritos",
+                url: link.href,
+            });
         else {
             await navigator.clipboard.writeText(link.href);
             showToast("Link da lista copiado.");
         }
     } catch (error) {
-        if (error.name !== "AbortError") showInfoDialog("Compartilhar lista", link.href);
+        if (error.name !== "AbortError")
+            showInfoDialog("Compartilhar lista", link.href);
     }
 }
 
 function getSellerMetrics(sellerName) {
-    const sellerProducts = PRODUCTS.filter((product) => product.vendedor === sellerName);
-    const sellerReviews = (state.reviews || []).filter((review) => review.seller === sellerName);
+    const sellerReviews = (state.reviews || []).filter(
+        (review) => review.seller === sellerName
+    );
     const ratings = sellerReviews.map((review) => Number(review.rating));
     const completedSales = getAllLocalOrders().reduce((total, order) => {
-        if (Number(order.stage) < 3 && order.status !== "entregue") return total;
-        return total + (order.items || []).filter((item) => item.seller === sellerName).reduce((quantity, item) => quantity + Number(item.qty || 1), 0);
+        if (Number(order.stage) < 3 && order.status !== "entregue")
+            return total;
+        return (
+            total +
+            (order.items || [])
+                .filter((item) => item.seller === sellerName)
+                .reduce((quantity, item) => quantity + Number(item.qty || 1), 0)
+        );
     }, 0);
     return {
-        rating: ratings.length ? (ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length).toFixed(1) : null,
+        rating: ratings.length
+            ? (
+                  ratings.reduce((sum, rating) => sum + rating, 0) /
+                  ratings.length
+              ).toFixed(1)
+            : null,
         completedSales,
-        reviews: sellerReviews.sort((first, second) => new Date(second.createdAt) - new Date(first.createdAt)).slice(0, 3)
+        reviews: sellerReviews
+            .sort(
+                (first, second) =>
+                    new Date(second.createdAt) - new Date(first.createdAt)
+            )
+            .slice(0, 3),
     };
 }
 
@@ -915,7 +1530,10 @@ function renderMyProducts() {
     const container = document.getElementById("my-products");
     if (!container) return;
 
-    const ownProducts = state.publishedProducts.filter((product) => product.ownerEmail === normalizeEmail(state.currentUser?.email));
+    const ownProducts = state.publishedProducts.filter(
+        (product) =>
+            product.ownerEmail === normalizeEmail(state.currentUser?.email)
+    );
     container.innerHTML = ownProducts.length
         ? ownProducts.map(buildProductCard).join("")
         : "<p class='empty-state'>Você ainda não publicou nenhum produto.</p>";
@@ -925,7 +1543,11 @@ function renderMyProducts() {
 async function deleteProduct(productId) {
     const id = Number(productId);
     const product = state.publishedProducts.find((item) => item.id === id);
-    if (!product || product.ownerEmail !== normalizeEmail(state.currentUser?.email)) return;
+    if (
+        !product ||
+        product.ownerEmail !== normalizeEmail(state.currentUser?.email)
+    )
+        return;
     if (!window.confirm(`Excluir "${product.nome}"?`)) return;
 
     try {
@@ -935,7 +1557,9 @@ async function deleteProduct(productId) {
         return;
     }
 
-    state.publishedProducts = state.publishedProducts.filter((item) => item.id !== id);
+    state.publishedProducts = state.publishedProducts.filter(
+        (item) => item.id !== id
+    );
     PRODUCTS = PRODUCTS.filter((item) => item.id !== id);
     state.cart = state.cart.filter((item) => item.id !== id);
     state.favorites = state.favorites.filter((item) => item !== id);
@@ -949,41 +1573,78 @@ async function deleteProduct(productId) {
 }
 
 function startEditProduct(productId) {
-    const product = state.publishedProducts.find((item) => item.id === Number(productId));
-    if (!product || product.ownerEmail !== normalizeEmail(state.currentUser?.email)) return;
+    const product = state.publishedProducts.find(
+        (item) => item.id === Number(productId)
+    );
+    if (
+        !product ||
+        product.ownerEmail !== normalizeEmail(state.currentUser?.email)
+    )
+        return;
     state.pendingImages = [];
     const photoInput = document.getElementById("pub-fotos");
     if (photoInput) photoInput.value = "";
     editingProductId = product.id;
     showScreen("screen-publicar");
     const values = {
-        "pub-nome": product.nome, "pub-marca": product.marca, "pub-cor": product.cor,
-        "pub-desc": product.desc, "pub-preco": String(product.preco).replace(".", ","),
-        "pub-aluguel-valor": product.aluguel || "", "pub-local": product.local,
-        "pub-busto": product.measurements?.bust || "", "pub-cintura": product.measurements?.waist || "",
-        "pub-quadril": product.measurements?.hip || "", "pub-comprimento": product.measurements?.length || "",
-        "pub-caimento": product.measurements?.fit || ""
+        "pub-nome": product.nome,
+        "pub-marca": product.marca,
+        "pub-cor": product.cor,
+        "pub-desc": product.desc,
+        "pub-preco": String(product.preco).replace(".", ","),
+        "pub-aluguel-valor": product.aluguel || "",
+        "pub-local": product.local,
+        "pub-busto": product.measurements?.bust || "",
+        "pub-cintura": product.measurements?.waist || "",
+        "pub-quadril": product.measurements?.hip || "",
+        "pub-comprimento": product.measurements?.length || "",
+        "pub-caimento": product.measurements?.fit || "",
     };
-    Object.entries(values).forEach(([id, value]) => { const field = document.getElementById(id); if (field) field.value = value; });
+    Object.entries(values).forEach(([id, value]) => {
+        const field = document.getElementById(id);
+        if (field) field.value = value;
+    });
     ["pub-categoria", "pub-tamanho", "pub-condicao"].forEach((id) => {
         const field = document.getElementById(id);
-        if (field) field.value = product[id === "pub-categoria" ? "categoria" : id === "pub-tamanho" ? "tamanho" : "estado"];
+        if (field)
+            field.value =
+                product[
+                    id === "pub-categoria"
+                        ? "categoria"
+                        : id === "pub-tamanho"
+                          ? "tamanho"
+                          : "estado"
+                ];
     });
     document.getElementById("pub-troca").checked = Boolean(product.troca);
     document.getElementById("pub-venda").checked = product.preco !== null;
     document.getElementById("pub-aluguel").checked = Boolean(product.aluguel);
-    const existingImages = product.images?.length ? product.images : product.image ? [product.image] : [];
+    const existingImages = product.images?.length
+        ? product.images
+        : product.image
+          ? [product.image]
+          : [];
     const preview = document.getElementById("photo-preview");
-    if (preview) preview.innerHTML = existingImages.map((image, index) => `<img src="${escapeHtml(image)}" alt="Foto atual ${index + 1} do anúncio" />`).join("");
+    if (preview)
+        preview.innerHTML = existingImages
+            .map(
+                (image, index) =>
+                    `<img src="${escapeHtml(image)}" alt="Foto atual ${index + 1} do anúncio" />`
+            )
+            .join("");
     const quality = document.getElementById("photo-quality");
-    if (quality) quality.innerHTML = `<strong>${existingImages.length} foto${existingImages.length === 1 ? "" : "s"} no anúncio</strong><ul><li>Selecione novas fotos somente se quiser substituir as atuais.</li></ul>`;
+    if (quality)
+        quality.innerHTML = `<strong>${existingImages.length} foto${existingImages.length === 1 ? "" : "s"} no anúncio</strong><ul><li>Selecione novas fotos somente se quiser substituir as atuais.</li></ul>`;
     showToast("Edite os dados e publique novamente.");
 }
 
 function getCartSubtotal() {
     return state.cart.reduce((sum, entry) => {
         const product = getProductById(entry.id);
-        return sum + (product && isForSale(product) ? product.preco * entry.qty : 0);
+        return (
+            sum +
+            (product && isForSale(product) ? product.preco * entry.qty : 0)
+        );
     }, 0);
 }
 
@@ -991,7 +1652,9 @@ function getCartSubtotal() {
 function getCouponDiscount(subtotal = getCartSubtotal()) {
     const coupon = state.appliedCoupon && COUPONS[state.appliedCoupon];
     if (!coupon) return 0;
-    return coupon.discount < 1 ? subtotal * coupon.discount : Math.min(subtotal, coupon.discount);
+    return coupon.discount < 1
+        ? subtotal * coupon.discount
+        : Math.min(subtotal, coupon.discount);
 }
 
 function applyCoupon() {
@@ -1034,11 +1697,17 @@ function renderOrders() {
         return true;
     });
 
-    orders.innerHTML = ordersToRender.length ? ordersToRender.map((order) => {
-        const isDemo = order.status === "demonstracao";
-        const isCancelled = order.status === "cancelado";
-        const status = isDemo ? "Demonstração (sem pagamento)" : isCancelled ? "Cancelado" : order.status;
-        return `
+    orders.innerHTML = ordersToRender.length
+        ? ordersToRender
+              .map((order) => {
+                  const isDemo = order.status === "demonstracao";
+                  const isCancelled = order.status === "cancelado";
+                  const status = isDemo
+                      ? "Demonstração (sem pagamento)"
+                      : isCancelled
+                        ? "Cancelado"
+                        : order.status;
+                  return `
         <div class="card order-card">
             <h3>Pedido #${escapeHtml(order.id)}</h3>
             <p>${escapeHtml(order.items?.map((item) => item.name).join(", ") || order.name)} · Status: ${escapeHtml(status)}</p>
@@ -1047,10 +1716,15 @@ function renderOrders() {
             ${isCancelled ? '<p class="page-intro">A reserva foi cancelada e o estoque foi liberado.</p>' : ""}
         </div>
     `;
-    }).join("") : `<p class="empty-state">Nenhum pedido nesta categoria.</p>`;
+              })
+              .join("")
+        : `<p class="empty-state">Nenhum pedido nesta categoria.</p>`;
 
     document.querySelectorAll(".order-filter").forEach((button) => {
-        button.classList.toggle("active", button.dataset.filter === orderFilter);
+        button.classList.toggle(
+            "active",
+            button.dataset.filter === orderFilter
+        );
     });
 }
 
@@ -1065,7 +1739,10 @@ function renderProfile() {
     const avatar = document.getElementById("profile-avatar");
     const profileThemeStatus = document.getElementById("profile-theme-status");
 
-    const user = state.currentUser || { nome: "Visitante", cidade: "Londrina, PR" };
+    const user = state.currentUser || {
+        nome: "Visitante",
+        cidade: "Londrina, PR",
+    };
 
     if (profileName) profileName.textContent = user.nome;
     if (profileCity) profileCity.textContent = user.cidade;
@@ -1076,29 +1753,36 @@ function renderProfile() {
     }
 
     if (profileThemeStatus) {
-        profileThemeStatus.textContent = state.settings.theme === "dark" ? "Escuro" : "Claro";
+        profileThemeStatus.textContent =
+            state.settings.theme === "dark" ? "Escuro" : "Claro";
     }
 
     const firstname = document.getElementById("user-firstname");
     if (firstname) firstname.textContent = user.nome.split(" ")[0];
-    document.querySelector(".seller-status")?.classList.toggle("hidden", state.settings.seller !== true);
+    document
+        .querySelector(".seller-status")
+        ?.classList.toggle("hidden", state.settings.seller !== true);
 }
 
 function renderCart() {
     const container = document.getElementById("cart-content");
     if (!container) return;
 
-    state.cart = state.cart.filter((entry) => isForSale(getProductById(entry.id)));
+    state.cart = state.cart.filter((entry) =>
+        isForSale(getProductById(entry.id))
+    );
 
     if (!state.cart.length) {
-        container.innerHTML = "<p class='empty-state'>Seu carrinho está vazio.</p>";
+        container.innerHTML =
+            "<p class='empty-state'>Seu carrinho está vazio.</p>";
         return;
     }
 
-    const items = state.cart.map((entry) => {
-        const product = getProductById(entry.id);
-        if (!product) return "";
-        return `
+    const items = state.cart
+        .map((entry) => {
+            const product = getProductById(entry.id);
+            if (!product) return "";
+            return `
             <div class="cart-item card">
                 <div class="cart-item-left">
                     <div class="mini-emoji">${productVisual(product, "cart-product-photo")}</div>
@@ -1117,14 +1801,18 @@ function renderCart() {
                 </div>
             </div>
         `;
-    }).join("");
+        })
+        .join("");
 
     const subtotal = getCartSubtotal();
     const discount = getCouponDiscount(subtotal);
     const total = subtotal - discount;
-    const couponOptions = Object.entries(COUPONS).map(([code, coupon]) =>
-        `<option value="${escapeHtml(code)}" ${state.appliedCoupon === code ? "selected" : ""}>${escapeHtml(code)} - ${escapeHtml(coupon.label)}</option>`
-    ).join("");
+    const couponOptions = Object.entries(COUPONS)
+        .map(
+            ([code, coupon]) =>
+                `<option value="${escapeHtml(code)}" ${state.appliedCoupon === code ? "selected" : ""}>${escapeHtml(code)} - ${escapeHtml(coupon.label)}</option>`
+        )
+        .join("");
     const couponPicker = couponOptions
         ? `<select id="coupon-select" aria-label="Escolher cupom"><option value="">Escolher cupom disponível</option>${couponOptions}</select>`
         : "";
@@ -1141,10 +1829,12 @@ function renderCart() {
         </div>
     `;
 
-    document.getElementById("coupon-select")?.addEventListener("change", (event) => {
-        const input = document.getElementById("coupon-input");
-        if (input) input.value = event.target.value;
-    });
+    document
+        .getElementById("coupon-select")
+        ?.addEventListener("change", (event) => {
+            const input = document.getElementById("coupon-input");
+            if (input) input.value = event.target.value;
+        });
 }
 
 // CHECKOUT, DADOS PESSOAIS E CONFIGURACOES
@@ -1163,14 +1853,16 @@ function renderCheckout() {
             <button class="btn btn-primary btn-full" type="submit">Registrar pedido de demonstração</button>
         </form>
     `;
-    document.getElementById("checkout-form")?.addEventListener("submit", finalizePurchase);
+    document
+        .getElementById("checkout-form")
+        ?.addEventListener("submit", finalizePurchase);
 }
 
 function fillPersonalDataForm() {
     const user = state.currentUser || {};
     const values = {
         "dados-nome": user.nome || "",
-        "dados-cidade": user.cidade || ""
+        "dados-cidade": user.cidade || "",
     };
 
     Object.entries(values).forEach(([id, value]) => {
@@ -1209,7 +1901,7 @@ async function handlePersonalData(event) {
         try {
             const account = await apiRequest("/auth/profile", {
                 method: "PATCH",
-                body: JSON.stringify({ nome: user.nome, cidade: user.cidade })
+                body: JSON.stringify({ nome: user.nome, cidade: user.cidade }),
             });
             Object.assign(user, account);
         } catch (error) {
@@ -1244,15 +1936,24 @@ function fillThemeForm() {
 
 function handleSettings(event) {
     event.preventDefault();
-    state.settings.language = document.getElementById("setting-language")?.value || "pt-BR";
-    state.settings.currency = document.getElementById("setting-currency")?.value || "BRL";
-    state.settings.payment = document.getElementById("setting-payment")?.value || "Pix";
-    state.settings.seller = Boolean(document.getElementById("setting-seller")?.checked);
-    state.settings.notifications = Boolean(document.getElementById("setting-notifications")?.checked);
-    state.settings.theme = document.getElementById("setting-theme")?.value || "light";
+    state.settings.language =
+        document.getElementById("setting-language")?.value || "pt-BR";
+    state.settings.currency =
+        document.getElementById("setting-currency")?.value || "BRL";
+    state.settings.payment =
+        document.getElementById("setting-payment")?.value || "Pix";
+    state.settings.seller = Boolean(
+        document.getElementById("setting-seller")?.checked
+    );
+    state.settings.notifications = Boolean(
+        document.getElementById("setting-notifications")?.checked
+    );
+    state.settings.theme =
+        document.getElementById("setting-theme")?.value || "light";
     document.documentElement.lang = state.settings.language;
     const notifications = document.getElementById("setting-notifications");
-    if (notifications) notifications.checked = state.settings.notifications !== false;
+    if (notifications)
+        notifications.checked = state.settings.notifications !== false;
     updateCurrency();
     applyTranslations();
     applyTheme();
@@ -1266,12 +1967,19 @@ function handleSettings(event) {
 
 async function handleOrderAction(action, orderId) {
     if (action !== "cancel-demo-order") {
-        showToast("Rastreio e entrega ficam indisponíveis enquanto o pedido for uma demonstração.");
+        showToast(
+            "Rastreio e entrega ficam indisponíveis enquanto o pedido for uma demonstração."
+        );
         return;
     }
     try {
-        const order = await apiRequest(`/orders/${encodeURIComponent(orderId)}/cancel`, { method: "PATCH" });
-        state.orders = state.orders.map((item) => String(item.id) === String(orderId) ? order : item);
+        const order = await apiRequest(
+            `/orders/${encodeURIComponent(orderId)}/cancel`,
+            { method: "PATCH" }
+        );
+        state.orders = state.orders.map((item) =>
+            String(item.id) === String(orderId) ? order : item
+        );
         await loadProductsFromApi();
         saveState();
         renderOrders();
@@ -1285,7 +1993,9 @@ async function handleOrderAction(action, orderId) {
 function submitOrderReview(event) {
     event.preventDefault();
     const form = event.target;
-    const order = state.orders.find((item) => String(item.id) === form.dataset.orderId);
+    const order = state.orders.find(
+        (item) => String(item.id) === form.dataset.orderId
+    );
     const rating = Number(new FormData(form).get("rating"));
     const text = String(new FormData(form).get("text") || "").trim();
     if (!order || Number(order.stage) < 3 || order.rating) {
@@ -1299,15 +2009,16 @@ function submitOrderReview(event) {
     order.rating = rating;
     order.review = text;
     (order.items || []).forEach((item) => {
-        if (item.seller) state.reviews.push({
-            orderId: order.id,
-            productId: item.id,
-            seller: item.seller,
-            author: state.currentUser?.nome || "Comprador",
-            rating,
-            text,
-            createdAt: new Date().toISOString()
-        });
+        if (item.seller)
+            state.reviews.push({
+                orderId: order.id,
+                productId: item.id,
+                seller: item.seller,
+                author: state.currentUser?.nome || "Comprador",
+                rating,
+                text,
+                createdAt: new Date().toISOString(),
+            });
     });
     saveState();
     renderOrders();
@@ -1322,27 +2033,42 @@ function renderDetails(productId) {
     const product = getProductById(productId);
     if (!product) {
         updateSeo("screen-detalhes");
-        container.innerHTML = "<p class='empty-state'>Produto não encontrado.</p>";
+        container.innerHTML =
+            "<p class='empty-state'>Produto não encontrado.</p>";
         return;
     }
 
     updateSeo("screen-detalhes", product);
 
-    const recommendedProducts = PRODUCTS
-        .filter((item) => item.id !== product.id)
+    const recommendedProducts = PRODUCTS.filter(
+        (item) => item.id !== product.id
+    )
         .sort((first, second) => {
-            const score = (candidate) => Number(normalizeCategory(candidate.categoria) === normalizeCategory(product.categoria)) * 3
-                + Number(candidate.tamanho === product.tamanho) * 2
-                + Number(candidate.local === product.local)
-                + Number(candidate.rating || 0) / 10;
+            const score = (candidate) =>
+                Number(
+                    normalizeCategory(candidate.categoria) ===
+                        normalizeCategory(product.categoria)
+                ) *
+                    3 +
+                Number(candidate.tamanho === product.tamanho) * 2 +
+                Number(candidate.local === product.local) +
+                Number(candidate.rating || 0) / 10;
             return score(second) - score(first);
         })
         .slice(0, 4);
 
     const measurements = product.measurements || {};
-    const measurementValues = [["Busto", measurements.bust], ["Cintura", measurements.waist], ["Quadril", measurements.hip], ["Comprimento", measurements.length]]
-        .filter(([, value]) => Number(value) > 0);
-    const productImages = product.images?.length ? product.images : product.image ? [product.image] : [];
+    const measurementValues = [
+        ["Busto", measurements.bust],
+        ["Cintura", measurements.waist],
+        ["Quadril", measurements.hip],
+        ["Comprimento", measurements.length],
+    ].filter(([, value]) => Number(value) > 0);
+    const productImages = product.images?.length
+        ? product.images
+        : product.image
+          ? [product.image]
+          : [];
     container.innerHTML = `
         <div class="details-card card">
             <div class="detail-gallery">${productImages.length ? productImages.map((image, index) => `<img class="details-photo" src="${escapeHtml(image)}" alt="${escapeHtml(product.nome)} - foto ${index + 1}" loading="lazy" />`).join("") : productVisual(product, "details-photo")}</div>
@@ -1377,7 +2103,9 @@ function renderSellerProfile(productId) {
     const product = getProductById(productId);
     if (!container || !product) return;
 
-    const sellerProducts = PRODUCTS.filter((item) => item.vendedor === product.vendedor);
+    const sellerProducts = PRODUCTS.filter(
+        (item) => item.vendedor === product.vendedor
+    );
     const metrics = getSellerMetrics(product.vendedor);
     container.innerHTML = `
         <button class="btn btn-outline seller-back" data-action="back-to-details" data-id="${product.id}">
@@ -1409,25 +2137,37 @@ async function renderChat(productId, otherUserId) {
         return;
     }
     if (!product.ownerId) {
-        container.innerHTML = '<p class="empty-state">Chat indisponível para este anúncio de demonstração.</p>';
+        container.innerHTML =
+            '<p class="empty-state">Chat indisponível para este anúncio de demonstração.</p>';
         return;
     }
 
     const isSeller = Number(product.ownerId) === Number(state.currentUser.id);
-    const conversationUserId = Number(otherUserId || (isSeller ? 0 : product.ownerId));
+    const conversationUserId = Number(
+        otherUserId || (isSeller ? 0 : product.ownerId)
+    );
     if (!conversationUserId) {
-        container.innerHTML = '<p class="empty-state">Abra uma conversa recebida para responder ao comprador.</p>';
+        container.innerHTML =
+            '<p class="empty-state">Abra uma conversa recebida para responder ao comprador.</p>';
         return;
     }
     let messages;
     try {
-        messages = await apiRequest(`/messages?productId=${encodeURIComponent(product.id)}&otherUserId=${conversationUserId}`);
+        messages = await apiRequest(
+            `/messages?productId=${encodeURIComponent(product.id)}&otherUserId=${conversationUserId}`
+        );
     } catch (error) {
         container.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`;
         return;
     }
-    const conversation = state.conversations.find((item) => Number(item.productId) === Number(product.id) && Number(item.otherUserId) === conversationUserId);
-    const conversationName = isSeller ? conversation?.otherName || "Comprador" : product.vendedor;
+    const conversation = state.conversations.find(
+        (item) =>
+            Number(item.productId) === Number(product.id) &&
+            Number(item.otherUserId) === conversationUserId
+    );
+    const conversationName = isSeller
+        ? conversation?.otherName || "Comprador"
+        : product.vendedor;
     container.innerHTML = `
         <button class="btn btn-outline chat-back" data-action="back-to-seller" data-id="${product.id}">
             <i class="fa-solid fa-arrow-left"></i> Voltar ao perfil
@@ -1441,12 +2181,20 @@ async function renderChat(productId, otherUserId) {
                 </div>
             </header>
             <div class="chat-messages">
-                ${messages.length ? messages.map((item) => `
+                ${
+                    messages.length
+                        ? messages
+                              .map(
+                                  (item) => `
                     <div class="chat-bubble ${Number(item.sender_id) === Number(state.currentUser.id) ? "buyer" : "seller"}">
                         <p>${escapeHtml(item.body)}</p>
                         <small>${Number(item.sender_id) === Number(state.currentUser.id) ? "Você" : escapeHtml(item.sender_name)}</small>
                     </div>
-                `).join("") : '<p class="empty-state">Nenhuma mensagem ainda. Inicie a conversa.</p>'}
+                `
+                              )
+                              .join("")
+                        : '<p class="empty-state">Nenhuma mensagem ainda. Inicie a conversa.</p>'
+                }
             </div>
             <form class="seller-message-form" data-product-id="${product.id}" data-user-id="${conversationUserId}">
                 <div class="input-group">
@@ -1472,7 +2220,8 @@ async function renderMessages() {
     if (!container) return;
     if (!state.currentUser?.id) {
         state.conversations = [];
-        container.innerHTML = '<p class="empty-state">Entre em uma conta para ver suas conversas.</p>';
+        container.innerHTML =
+            '<p class="empty-state">Entre em uma conta para ver suas conversas.</p>';
         updateMessageBadge();
         return;
     }
@@ -1482,8 +2231,10 @@ async function renderMessages() {
         container.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`;
         return;
     }
-    container.innerHTML = state.conversations.length ? state.conversations.map((conversation) => {
-        return `
+    container.innerHTML = state.conversations.length
+        ? state.conversations
+              .map((conversation) => {
+                  return `
             <button class="message-conversation" data-action="open-chat" data-id="${conversation.productId}" data-user-id="${conversation.otherUserId}">
                 <span class="seller-avatar">${escapeHtml(conversation.otherName.charAt(0).toUpperCase())}</span>
                 <span class="message-conversation-body">
@@ -1494,7 +2245,9 @@ async function renderMessages() {
                 <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
             </button>
         `;
-    }).join("") : '<p class="empty-state">Você ainda não conversou com nenhum vendedor.</p>';
+              })
+              .join("")
+        : '<p class="empty-state">Você ainda não conversou com nenhum vendedor.</p>';
     updateMessageBadge();
 }
 
@@ -1508,7 +2261,7 @@ async function handleSellerMessage(event) {
     try {
         await apiRequest("/messages", {
             method: "POST",
-            body: JSON.stringify({ productId, otherUserId, message })
+            body: JSON.stringify({ productId, otherUserId, message }),
         });
     } catch (error) {
         showToast(error.message);
@@ -1558,7 +2311,9 @@ function toggleNotifications() {
 }
 
 function markAllNotificationsRead() {
-    state.notifications.forEach((notification) => { notification.read = true; });
+    state.notifications.forEach((notification) => {
+        notification.read = true;
+    });
     saveState();
     renderNotifications();
     showToast("Todas as notificações foram marcadas como lidas.");
@@ -1577,7 +2332,7 @@ function clearFilters() {
         tamanho: "",
         modalidade: "",
         estado: "",
-        ordenar: "recentes"
+        ordenar: "recentes",
     };
 
     document.getElementById("search-input").value = "";
@@ -1696,11 +2451,12 @@ function changeQty(productId, direction) {
             return;
         }
         item.qty += 1;
-    }
-    else item.qty -= 1;
+    } else item.qty -= 1;
 
     if (item.qty <= 0) {
-        state.cart = state.cart.filter((entry) => entry.id !== Number(productId));
+        state.cart = state.cart.filter(
+            (entry) => entry.id !== Number(productId)
+        );
     }
 
     updateCartBadge();
@@ -1721,7 +2477,9 @@ async function finalizePurchase(event) {
         return;
     }
 
-    state.pendingOrderKey ||= window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    state.pendingOrderKey ||=
+        window.crypto?.randomUUID?.() ||
+        `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     saveState();
     let order;
     try {
@@ -1729,9 +2487,12 @@ async function finalizePurchase(event) {
             method: "POST",
             headers: { "Idempotency-Key": state.pendingOrderKey },
             body: JSON.stringify({
-                items: state.cart.map((item) => ({ productId: item.id, qty: item.qty })),
-                couponCode: state.appliedCoupon
-            })
+                items: state.cart.map((item) => ({
+                    productId: item.id,
+                    qty: item.qty,
+                })),
+                couponCode: state.appliedCoupon,
+            }),
         });
     } catch (error) {
         showToast(error.message);
@@ -1752,7 +2513,10 @@ async function finalizePurchase(event) {
     renderCheckout();
     await loadProductsFromApi();
     await loadOrdersFromApi();
-    addNotification("Pedido de demonstração", `O pedido #${order.id} foi salvo no servidor; nenhum pagamento ou envio foi realizado.`);
+    addNotification(
+        "Pedido de demonstração",
+        `O pedido #${order.id} foi salvo no servidor; nenhum pagamento ou envio foi realizado.`
+    );
     saveState();
     showScreen("screen-pedidos");
     showToast("Pedido de demonstração salvo. Nenhum pagamento foi realizado.");
@@ -1760,12 +2524,18 @@ async function finalizePurchase(event) {
 
 // LOGIN, CADASTRO, RECUPERACAO E SAIDA
 function navTo(element, screen) {
-    document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item === element));
+    document
+        .querySelectorAll(".nav-item")
+        .forEach((item) => item.classList.toggle("active", item === element));
     showScreen(screen);
 }
 
 function loginDemo() {
-    state.currentUser = { nome: "Visitante", email: "visitor@demo.local", cidade: "Londrina, PR" };
+    state.currentUser = {
+        nome: "Visitante",
+        email: "visitor@demo.local",
+        cidade: "Londrina, PR",
+    };
     activateUserData();
     saveState();
     applyLoggedUser();
@@ -1794,7 +2564,7 @@ async function handleLogin(event) {
     try {
         user = await apiRequest("/auth/login", {
             method: "POST",
-            body: JSON.stringify({ email, senha })
+            body: JSON.stringify({ email, senha }),
         });
     } catch (error) {
         setLoginError(error.message);
@@ -1844,7 +2614,7 @@ async function handleCadastro(event) {
     try {
         state.currentUser = await apiRequest("/auth/register", {
             method: "POST",
-            body: JSON.stringify({ nome, email, senha, cidade })
+            body: JSON.stringify({ nome, email, senha, cidade }),
         });
     } catch (error) {
         showToast(error.message);
@@ -1876,16 +2646,72 @@ async function handleRecover(event) {
     try {
         await apiRequest("/auth/recover", {
             method: "POST",
-            body: JSON.stringify({ email })
+            body: JSON.stringify({ email }),
         });
     } catch (error) {
         showToast(error.message);
         return;
     }
 
-    showToast("Se a conta existir, enviaremos um link de recuperação para o e-mail informado.");
+    showToast(
+        "Se a conta existir, enviaremos um link de recuperação para o e-mail informado."
+    );
     event.target.reset();
     showScreen("screen-login");
+}
+
+async function handlePasswordReset(event) {
+    event.preventDefault();
+    const token = new URLSearchParams(window.location.search).get("resetToken");
+    const passwordInput = document.getElementById("reset-password");
+    const confirmInput = document.getElementById("reset-password-confirm");
+    const errorMessage = document.getElementById("reset-error");
+    const password = passwordInput?.value || "";
+
+    if (!token) {
+        if (errorMessage) {
+            errorMessage.textContent =
+                "Este link não é válido. Solicite uma nova recuperação de senha.";
+            errorMessage.classList.remove("hidden");
+        }
+        return;
+    }
+    if (password.length < 8 || password.length > 128) {
+        if (passwordInput)
+            passwordInput.setCustomValidity(
+                "Use uma senha de 8 a 128 caracteres."
+            );
+        passwordInput?.reportValidity();
+        return;
+    }
+    if (password !== confirmInput?.value) {
+        if (confirmInput)
+            confirmInput.setCustomValidity("As senhas não conferem.");
+        confirmInput?.reportValidity();
+        return;
+    }
+
+    try {
+        await apiRequest("/auth/reset", {
+            method: "POST",
+            body: JSON.stringify({ token, senha: password }),
+        });
+    } catch (error) {
+        if (errorMessage) {
+            errorMessage.textContent = error.message;
+            errorMessage.classList.remove("hidden");
+        }
+        return;
+    }
+
+    const cleanUrl = new URL(window.location.href);
+    cleanUrl.searchParams.delete("resetToken");
+    cleanUrl.hash = "screen-login";
+    window.history.replaceState({}, "", cleanUrl);
+    event.target.reset();
+    if (errorMessage) errorMessage.classList.add("hidden");
+    showScreen("screen-login", { replace: true });
+    showToast("Senha alterada. Entre com a nova senha.");
 }
 
 function handleSupport(event) {
@@ -1894,7 +2720,11 @@ function handleSupport(event) {
     const message = document.getElementById("support-message")?.value.trim();
     if (!message) return;
 
-    state.supportMessages.push({ subject, message, createdAt: new Date().toISOString() });
+    state.supportMessages.push({
+        subject,
+        message,
+        createdAt: new Date().toISOString(),
+    });
     saveState();
     event.target.reset();
     showToast("Mensagem enviada para o suporte!");
@@ -1903,7 +2733,8 @@ function handleSupport(event) {
 function goBack() {
     if (screenHistory.length > 1) {
         screenHistory.pop();
-        const previousScreen = screenHistory[screenHistory.length - 1] || "screen-home";
+        const previousScreen =
+            screenHistory[screenHistory.length - 1] || "screen-home";
         showScreen(previousScreen, { fromHistory: true });
         return;
     }
@@ -1935,13 +2766,18 @@ function resetPublishForm() {
     if (!editingProductId) state.pendingImages = [];
     if (!editingProductId) {
         const quality = document.getElementById("photo-quality");
-        if (quality) quality.innerHTML = "<strong>Guia de fotos</strong><ul><li>Use um fundo simples e boa iluminação.</li><li>Inclua frente, costas e etiqueta/tamanho.</li><li>Mostre de perto qualquer detalhe ou desgaste.</li></ul>";
+        if (quality)
+            quality.innerHTML =
+                "<strong>Guia de fotos</strong><ul><li>Use um fundo simples e boa iluminação.</li><li>Inclua frente, costas e etiqueta/tamanho.</li><li>Mostre de perto qualquer detalhe ou desgaste.</li></ul>";
     }
 }
 
 // TROCA DE TELAS E CONTROLE DOS EVENTOS DA APLICACAO
 function showScreen(screenId, options = {}) {
-    if (screenId === "screen-checkout" && (!state.cart.length || !state.currentUser?.id)) {
+    if (
+        screenId === "screen-checkout" &&
+        (!state.cart.length || !state.currentUser?.id)
+    ) {
         startCheckout();
         return;
     }
@@ -1950,13 +2786,19 @@ function showScreen(screenId, options = {}) {
     document.getElementById("notification-panel")?.classList.add("hidden");
 
     if (screenId === "screen-catalogo" && !options.keepFilters) clearFilters();
-    document.getElementById("app-header-brand")?.classList.toggle("hidden", screenId === "screen-home");
+    document
+        .getElementById("app-header-brand")
+        ?.classList.toggle("hidden", screenId === "screen-home");
     if (screenId === "screen-dados") fillPersonalDataForm();
     if (screenId === "screen-publicar") resetPublishForm();
     if (screenId === "screen-tema") fillThemeForm();
     updateSeo(screenId);
 
-    if (!options.fromHistory && appScreens.includes(screenId) && !authScreens.includes(screenId)) {
+    if (
+        !options.fromHistory &&
+        appScreens.includes(screenId) &&
+        !authScreens.includes(screenId)
+    ) {
         const lastScreen = screenHistory[screenHistory.length - 1];
         if (lastScreen !== screenId) {
             screenHistory.push(screenId);
@@ -1966,7 +2808,10 @@ function showScreen(screenId, options = {}) {
     if (options.url) {
         const method = options.replace ? "replaceState" : "pushState";
         window.history[method]({ screenId }, "", options.url);
-    } else if (!options.fromHistory && window.location.hash !== `#${screenId}`) {
+    } else if (
+        !options.fromHistory &&
+        window.location.hash !== `#${screenId}`
+    ) {
         const method = options.replace ? "replaceState" : "pushState";
         window.history[method]({ screenId }, "", `#${screenId}`);
     }
@@ -1985,17 +2830,32 @@ function showScreen(screenId, options = {}) {
 
     const backButton = document.getElementById("btn-back");
     if (backButton) {
-        const shouldShowBack = appScreens.includes(screenId) && screenHistory.length > 1 && screenId !== "screen-home";
+        const shouldShowBack =
+            appScreens.includes(screenId) &&
+            screenHistory.length > 1 &&
+            screenId !== "screen-home";
         backButton.classList.toggle("hidden", !shouldShowBack);
     }
 
-    if (screenId === "screen-login" || screenId === "screen-cadastro" || screenId === "screen-recuperar") {
-        document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
+    if (
+        screenId === "screen-login" ||
+        screenId === "screen-cadastro" ||
+        screenId === "screen-recuperar"
+    ) {
+        document
+            .querySelectorAll(".nav-item")
+            .forEach((item) => item.classList.remove("active"));
     }
 
-    const navItem = document.querySelector(`.nav-item[data-screen="${screenId}"]`);
+    const navItem = document.querySelector(
+        `.nav-item[data-screen="${screenId}"]`
+    );
     if (navItem) {
-        document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item === navItem));
+        document
+            .querySelectorAll(".nav-item")
+            .forEach((item) =>
+                item.classList.toggle("active", item === navItem)
+            );
     }
 }
 
@@ -2014,7 +2874,10 @@ function handleGlobalActionClick(event) {
     const infoTrigger = event.target.closest("[data-info]");
     if (infoTrigger) {
         event.preventDefault();
-        showInfoDialog(infoTrigger.dataset.info, infoTrigger.dataset.infoText || "");
+        showInfoDialog(
+            infoTrigger.dataset.info,
+            infoTrigger.dataset.infoText || ""
+        );
         return;
     }
 
@@ -2036,8 +2899,20 @@ function handleGlobalActionClick(event) {
     const userId = button.dataset.userId;
     const category = button.dataset.category;
     const filter = button.dataset.filter;
+    const coupon = button.dataset.coupon;
 
     if (action === "add-cart") addToCart(id);
+    if (action === "start-checkout") startCheckout();
+    if (action === "apply-coupon") applyCoupon();
+    if (action === "remove-coupon") removeCoupon();
+    if (action === "use-coupon") useCoupon(coupon);
+    if (action === "close-info-dialog") closeInfoDialog();
+    if (action === "toggle-menu") toggleMenu();
+    if (action === "toggle-notifications") toggleNotifications();
+    if (action === "mark-all-notifications-read") markAllNotificationsRead();
+    if (action === "toggle-filters") toggleFilters();
+    if (action === "clear-filters") clearFilters();
+    if (action === "logout") void logout();
     if (action === "details") openProductDetails(id);
     if (action === "view-seller") {
         showScreen("screen-vendedor");
@@ -2065,13 +2940,17 @@ function handleGlobalActionClick(event) {
     if (action === "save-search") saveCurrentSearch();
     if (action === "apply-saved-search") applySavedSearch(id);
     if (action === "delete-saved-search") {
-        state.savedSearches = state.savedSearches.filter((search) => search.id !== id);
+        state.savedSearches = state.savedSearches.filter(
+            (search) => search.id !== id
+        );
         saveState();
         renderSavedSearches();
     }
     if (action === "share-wishlist") shareWishlist();
     if (action === "open-notification-product") {
-        const notification = state.notifications.find((item) => Number(item.productId) === Number(id));
+        const notification = state.notifications.find(
+            (item) => Number(item.productId) === Number(id)
+        );
         if (notification) {
             notification.read = true;
             saveState();
@@ -2087,24 +2966,34 @@ function handleGlobalActionClick(event) {
 }
 
 function handlePanelDismissal(event) {
-    if (!event.target.closest("#side-menu") && !event.target.closest("#btn-menu") && !event.target.closest(".side-menu-nav button")) {
+    if (
+        !event.target.closest("#side-menu") &&
+        !event.target.closest("#btn-menu") &&
+        !event.target.closest(".side-menu-nav button")
+    ) {
         document.getElementById("side-menu")?.classList.add("hidden");
     }
 
-    if (!event.target.closest("#notification-panel") && !event.target.closest("#btn-notify")) {
+    if (
+        !event.target.closest("#notification-panel") &&
+        !event.target.closest("#btn-notify")
+    ) {
         document.getElementById("notification-panel")?.classList.add("hidden");
     }
 }
 
 function handleGlobalKeyboardShortcuts(event) {
-    const notification = event.target.closest('.notification-item[data-action="open-notification-product"]');
+    const notification = event.target.closest(
+        '.notification-item[data-action="open-notification-product"]'
+    );
     if (notification && ["Enter", " "].includes(event.key)) {
         event.preventDefault();
         notification.click();
         return;
     }
     const card = event.target.closest(".product-card");
-    if (!card || event.target !== card || !["Enter", " "].includes(event.key)) return;
+    if (!card || event.target !== card || !["Enter", " "].includes(event.key))
+        return;
 
     event.preventDefault();
     openProductDetails(card.dataset.id);
@@ -2131,12 +3020,15 @@ function bindFilterInputs() {
         document.getElementById("f-preco-min"),
         document.getElementById("f-preco-max"),
         document.getElementById("f-local"),
-        document.getElementById("f-ordenar")
+        document.getElementById("f-ordenar"),
     ].filter(Boolean);
 
     if (searchInput) searchInput.addEventListener("input", applyFilters);
     catalogFilterInputs.forEach((filterInput) => {
-        filterInput.addEventListener(filterInput.tagName === "SELECT" ? "change" : "input", applyFilters);
+        filterInput.addEventListener(
+            filterInput.tagName === "SELECT" ? "change" : "input",
+            applyFilters
+        );
     });
 }
 
@@ -2144,6 +3036,7 @@ function bindFormListeners() {
     const formLogin = document.getElementById("form-login");
     const formCadastro = document.getElementById("form-cadastro");
     const formRecover = document.getElementById("form-recuperar");
+    const formReset = document.getElementById("form-reset");
     const formHomeSearch = document.getElementById("home-search-form");
     const formPublicar = document.getElementById("form-publicar");
     const formPersonalData = document.getElementById("form-dados");
@@ -2174,8 +3067,11 @@ function bindFormListeners() {
     if (formLogin) formLogin.addEventListener("submit", handleLogin);
     if (formCadastro) formCadastro.addEventListener("submit", handleCadastro);
     if (formRecover) formRecover.addEventListener("submit", handleRecover);
-    if (formHomeSearch) formHomeSearch.addEventListener("submit", searchFromHome);
-    if (formPersonalData) formPersonalData.addEventListener("submit", handlePersonalData);
+    if (formReset) formReset.addEventListener("submit", handlePasswordReset);
+    if (formHomeSearch)
+        formHomeSearch.addEventListener("submit", searchFromHome);
+    if (formPersonalData)
+        formPersonalData.addEventListener("submit", handlePersonalData);
     if (formSettings) {
         fillSettingsForm();
         formSettings.addEventListener("submit", handleSettings);
@@ -2187,7 +3083,9 @@ function bindFormListeners() {
     if (formSuporte) formSuporte.addEventListener("submit", handleSupport);
 
     if (cardToggle && cardFields) {
-        cardToggle.addEventListener("change", () => cardFields.classList.toggle("hidden", !cardToggle.checked));
+        cardToggle.addEventListener("change", () =>
+            cardFields.classList.toggle("hidden", !cardToggle.checked)
+        );
     }
 
     if (profilePhotoInput) {
@@ -2197,7 +3095,8 @@ function bindFormListeners() {
 
             const reader = new FileReader();
             reader.addEventListener("load", () => {
-                if (!state.currentUser) state.currentUser = { nome: "Visitante" };
+                if (!state.currentUser)
+                    state.currentUser = { nome: "Visitante" };
                 state.currentUser.photo = reader.result;
                 saveState();
                 renderProfile();
@@ -2213,7 +3112,7 @@ function bindFormListeners() {
                 name: document.getElementById("pub-nome")?.value.trim(),
                 category: document.getElementById("pub-categoria")?.value,
                 description: document.getElementById("pub-desc")?.value.trim(),
-                savedAt: new Date().toISOString()
+                savedAt: new Date().toISOString(),
             });
             saveState();
             showToast("Rascunho salvo neste navegador.");
@@ -2229,49 +3128,89 @@ function bindFormListeners() {
                 return;
             }
             const name = document.getElementById("pub-nome")?.value.trim();
-            const description = document.getElementById("pub-desc")?.value.trim();
-            const priceValue = document.getElementById("pub-preco")?.value || "";
+            const description = document
+                .getElementById("pub-desc")
+                ?.value.trim();
+            const priceValue =
+                document.getElementById("pub-preco")?.value || "";
             const price = Number(priceValue.replace(",", "."));
-            const rentalPrice = Number(document.getElementById("pub-aluguel-valor")?.value || 0) || null;
+            const rentalPrice =
+                Number(
+                    document.getElementById("pub-aluguel-valor")?.value || 0
+                ) || null;
             const forSale = document.getElementById("pub-venda")?.checked;
             const forTrade = document.getElementById("pub-troca")?.checked;
             const forRent = document.getElementById("pub-aluguel")?.checked;
-            const existingProduct = state.publishedProducts.find((product) => product.id === editingProductId);
+            const existingProduct = state.publishedProducts.find(
+                (product) => product.id === editingProductId
+            );
             if (!name || !description || (!forSale && !forTrade && !forRent)) {
-                showToast("Preencha os dados e escolha pelo menos uma modalidade.");
+                showToast(
+                    "Preencha os dados e escolha pelo menos uma modalidade."
+                );
                 return;
             }
             if ((forSale && price <= 0) || (forRent && rentalPrice <= 0)) {
-                showToast("Informe preços válidos para as modalidades escolhidas.");
+                showToast(
+                    "Informe preços válidos para as modalidades escolhidas."
+                );
                 return;
             }
-            if (!state.pendingImages.length && !existingProduct?.image && !existingProduct?.images?.length) {
-                showToast("Adicione pelo menos uma foto para apresentar o item.");
+            if (
+                !state.pendingImages.length &&
+                !existingProduct?.image &&
+                !existingProduct?.images?.length
+            ) {
+                showToast(
+                    "Adicione pelo menos uma foto para apresentar o item."
+                );
                 return;
             }
 
             const measurements = {
-                bust: Number(document.getElementById("pub-busto")?.value) || null,
-                waist: Number(document.getElementById("pub-cintura")?.value) || null,
-                hip: Number(document.getElementById("pub-quadril")?.value) || null,
-                length: Number(document.getElementById("pub-comprimento")?.value) || null,
-                fit: document.getElementById("pub-caimento")?.value.trim() || ""
+                bust:
+                    Number(document.getElementById("pub-busto")?.value) || null,
+                waist:
+                    Number(document.getElementById("pub-cintura")?.value) ||
+                    null,
+                hip:
+                    Number(document.getElementById("pub-quadril")?.value) ||
+                    null,
+                length:
+                    Number(document.getElementById("pub-comprimento")?.value) ||
+                    null,
+                fit:
+                    document.getElementById("pub-caimento")?.value.trim() || "",
             };
-            const images = state.pendingImages.length ? [...state.pendingImages] : existingProduct?.images || (existingProduct?.image ? [existingProduct.image] : []);
+            const images = state.pendingImages.length
+                ? [...state.pendingImages]
+                : existingProduct?.images ||
+                  (existingProduct?.image ? [existingProduct.image] : []);
 
             const publishedProduct = {
                 id: editingProductId || Date.now(),
                 nome: name,
                 emoji: "👕",
-                categoria: normalizeCategory(document.getElementById("pub-categoria")?.value || "Camisetas"),
-                marca: document.getElementById("pub-marca")?.value.trim() || "Sem marca",
+                categoria: normalizeCategory(
+                    document.getElementById("pub-categoria")?.value ||
+                        "Camisetas"
+                ),
+                marca:
+                    document.getElementById("pub-marca")?.value.trim() ||
+                    "Sem marca",
                 tamanho: document.getElementById("pub-tamanho")?.value || "G",
-                cor: document.getElementById("pub-cor")?.value.trim() || "Não informada",
-                estado: document.getElementById("pub-condicao")?.value || "Excelente",
+                cor:
+                    document.getElementById("pub-cor")?.value.trim() ||
+                    "Não informada",
+                estado:
+                    document.getElementById("pub-condicao")?.value ||
+                    "Excelente",
                 preco: forSale ? price : null,
                 aluguel: forRent ? rentalPrice : null,
                 troca: forTrade,
-                local: document.getElementById("pub-local")?.value.trim() || "Não informada",
+                local:
+                    document.getElementById("pub-local")?.value.trim() ||
+                    "Não informada",
                 vendedor: state.currentUser?.nome || "Visitante",
                 rating: 5,
                 pop: 0,
@@ -2280,12 +3219,17 @@ function bindFormListeners() {
                 images,
                 measurements,
                 stock: existingProduct?.stock ?? 1,
-                ownerEmail: normalizeEmail(state.currentUser?.email)
+                ownerEmail: normalizeEmail(state.currentUser?.email),
             };
-            const existingIndex = state.publishedProducts.findIndex((product) => product.id === editingProductId);
+            const existingIndex = state.publishedProducts.findIndex(
+                (product) => product.id === editingProductId
+            );
             let savedProduct;
             try {
-                savedProduct = await sendProductToApi(publishedProduct, existingIndex >= 0 ? "PUT" : "POST");
+                savedProduct = await sendProductToApi(
+                    publishedProduct,
+                    existingIndex >= 0 ? "PUT" : "POST"
+                );
             } catch (error) {
                 showToast(error.message);
                 if (error.status === 401) showScreen("screen-login");
@@ -2295,11 +3239,21 @@ function bindFormListeners() {
 
             if (existingIndex >= 0) {
                 const existing = state.publishedProducts[existingIndex];
-                if (!publishedProduct.image) publishedProduct.image = existing.image || "";
-                if (!state.pendingImages.length) publishedProduct.images = existing.images || (existing.image ? [existing.image] : []);
-                if (!Object.values(measurements).some(Boolean)) publishedProduct.measurements = existing.measurements || {};
-                Object.assign(existing, publishedProduct, { id: existing.id, stock: existing.stock });
-                const productIndex = PRODUCTS.findIndex((product) => product.id === existing.id);
+                if (!publishedProduct.image)
+                    publishedProduct.image = existing.image || "";
+                if (!state.pendingImages.length)
+                    publishedProduct.images =
+                        existing.images ||
+                        (existing.image ? [existing.image] : []);
+                if (!Object.values(measurements).some(Boolean))
+                    publishedProduct.measurements = existing.measurements || {};
+                Object.assign(existing, publishedProduct, {
+                    id: existing.id,
+                    stock: existing.stock,
+                });
+                const productIndex = PRODUCTS.findIndex(
+                    (product) => product.id === existing.id
+                );
                 if (productIndex >= 0) PRODUCTS[productIndex] = existing;
                 showToast("Anúncio atualizado com sucesso!");
             } else {
@@ -2330,10 +3284,13 @@ function bindPhotoUploadInput() {
         state.pendingImages = [];
         const selectedFiles = [...photoInput.files];
         const warnings = [];
-        if (selectedFiles.length > 8) showToast("Você pode adicionar no máximo 8 fotos.");
+        if (selectedFiles.length > 8)
+            showToast("Você pode adicionar no máximo 8 fotos.");
         const validFiles = selectedFiles.slice(0, 8).filter((file) => {
             if (!file.type.startsWith("image/")) {
-                warnings.push(`${file.name}: arquivo não reconhecido como imagem.`);
+                warnings.push(
+                    `${file.name}: arquivo não reconhecido como imagem.`
+                );
                 return false;
             }
             if (file.size > 5 * 1024 * 1024) {
@@ -2344,14 +3301,37 @@ function bindPhotoUploadInput() {
         });
 
         try {
-            const preparedImages = await Promise.all(validFiles.map(async (file) => ({ file, image: await prepareProductImage(file) })));
+            const preparedImages = await Promise.all(
+                validFiles.map(async (file) => ({
+                    file,
+                    image: await prepareProductImage(file),
+                }))
+            );
             state.pendingImages = preparedImages.map(({ image }) => image.src);
             preparedImages.forEach(({ file, image: prepared }, index) => {
-                if (Math.min(prepared.originalWidth, prepared.originalHeight) < 700) warnings.push(`${file.name}: resolução baixa; tente uma foto com mais detalhes.`);
-                if (prepared.smallFile) warnings.push(`${file.name}: arquivo pequeno; confira se a foto está nítida.`);
-                if (prepared.brightness < 48) warnings.push(`${file.name}: pode estar escura; experimente usar luz natural.`);
-                if (prepared.brightness > 232) warnings.push(`${file.name}: pode estar clara demais; confira se as cores aparecem.`);
-                if (prepared.contrast < 12) warnings.push(`${file.name}: há pouco contraste; confira se a peça está focada e visível.`);
+                if (
+                    Math.min(prepared.originalWidth, prepared.originalHeight) <
+                    700
+                )
+                    warnings.push(
+                        `${file.name}: resolução baixa; tente uma foto com mais detalhes.`
+                    );
+                if (prepared.smallFile)
+                    warnings.push(
+                        `${file.name}: arquivo pequeno; confira se a foto está nítida.`
+                    );
+                if (prepared.brightness < 48)
+                    warnings.push(
+                        `${file.name}: pode estar escura; experimente usar luz natural.`
+                    );
+                if (prepared.brightness > 232)
+                    warnings.push(
+                        `${file.name}: pode estar clara demais; confira se as cores aparecem.`
+                    );
+                if (prepared.contrast < 12)
+                    warnings.push(
+                        `${file.name}: há pouco contraste; confira se a peça está focada e visível.`
+                    );
                 const previewImage = document.createElement("img");
                 previewImage.alt = `Pré-visualização ${index + 1}: ${file.name}`;
                 previewImage.src = prepared.src;
@@ -2361,15 +3341,19 @@ function bindPhotoUploadInput() {
                 quality.innerHTML = `<strong>${preparedImages.length} de 8 fotos selecionadas</strong><ul>${warnings.length ? warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join("") : "<li>Boa seleção. Confira frente, costas, etiqueta e detalhes da peça.</li>"}</ul>`;
             }
         } catch {
-            showToast("Não foi possível preparar uma das fotos. Tente outro arquivo.");
+            showToast(
+                "Não foi possível preparar uma das fotos. Tente outro arquivo."
+            );
         }
     });
 }
 
 function attachEvents() {
     document.addEventListener("submit", (event) => {
-        if (event.target.matches(".seller-message-form")) handleSellerMessage(event);
-        if (event.target.matches(".order-review-form")) submitOrderReview(event);
+        if (event.target.matches(".seller-message-form"))
+            handleSellerMessage(event);
+        if (event.target.matches(".order-review-form"))
+            submitOrderReview(event);
     });
 
     document.addEventListener("click", handleGlobalActionClick);
@@ -2405,9 +3389,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderNotifications();
     renderMessages();
     attachEvents();
-    const hasSharedWishlist = new URLSearchParams(window.location.search).has("wishlist");
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasSharedWishlist = urlParams.has("wishlist");
+    const hasPasswordReset = urlParams.has("resetToken");
     if (hasSharedWishlist) renderFavorites();
-    showScreen(hasSharedWishlist ? "screen-favoritos" : window.location.hash.slice(1) || "screen-home", { replace: true });
+    showScreen(
+        hasPasswordReset
+            ? "screen-reset"
+            : hasSharedWishlist
+              ? "screen-favoritos"
+              : window.location.hash.slice(1) || "screen-home",
+        { replace: true }
+    );
     loadProductsFromApi().then(() => {
         const productId = productIdFromPath(window.location.pathname);
         if (hasSharedWishlist) renderFavorites();
@@ -2415,7 +3408,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     const translationObserver = new MutationObserver(() => applyTranslations());
-    translationObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
+    translationObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+    });
 });
 
 window.addEventListener("popstate", () => {
@@ -2441,4 +3438,3 @@ window.toggleMenu = toggleMenu;
 window.toggleNotifications = toggleNotifications;
 window.markAllNotificationsRead = markAllNotificationsRead;
 window.renderMessages = renderMessages;
-

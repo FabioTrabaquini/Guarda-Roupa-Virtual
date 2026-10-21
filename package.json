@@ -5,13 +5,22 @@
     "description": "Marketplace acadêmico de moda circular",
     "scripts": {
         "start": "node server.js",
-        "dev": "node server.js",
-        "test": "node --test"
+        "dev": "node --watch server.js",
+        "test": "node --test",
+        "lint": "eslint app.js server.js test/auth.test.js",
+        "format": "prettier --write app.js server.js test/auth.test.js index.html style.css README.md package.json eslint.config.mjs .prettierrc.json .github/workflows/ci.yml",
+        "format:check": "prettier --check app.js server.js test/auth.test.js index.html style.css README.md package.json eslint.config.mjs .prettierrc.json .github/workflows/ci.yml"
     },
     "engines": {
         "node": ">=18"
     },
     "dependencies": {
         "sql.js": "^1.14.2"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.39.5",
+        "eslint": "^9.39.5",
+        "globals": "^17.13.0",
+        "prettier": "^3.9.10"
     }
 }

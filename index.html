@@ -1,640 +1,1238 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<!-- Estrutura das telas do marketplace, formularios, navegacao e pontos de montagem da interface. -->
+    <!-- Estrutura das telas do marketplace, formularios, navegacao e pontos de montagem da interface. -->
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Guarda Roupa Virtual | Moda circular</title>
-    <meta name="description" content="Compre, troque ou alugue roupas de forma consciente no Guarda Roupa Virtual." />
-    <meta name="theme-color" content="#8B5CF6" />
-    <meta property="og:type" content="website" />
-    <meta property="og:locale" content="pt_BR" />
-    <meta property="og:title" content="Guarda Roupa Virtual | Moda circular" />
-    <meta property="og:description" content="Compre, troque ou alugue roupas de forma consciente." />
-    <meta property="og:image" content="/imagens/arara.png" />
-    <link rel="canonical" href="/" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <script type="application/ld+json" id="structured-data">{
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        "name": "Guarda Roupa Virtual",
-        "description": "Marketplace de moda circular para comprar, trocar e alugar roupas.",
-        "url": "/"
-    }</script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <link rel="stylesheet" href="/style.css" />
-</head>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Guarda Roupa Virtual | Moda circular</title>
+        <meta
+            name="description"
+            content="Compre, troque ou alugue roupas de forma consciente no Guarda Roupa Virtual."
+        />
+        <meta name="theme-color" content="#8B5CF6" />
+        <meta property="og:type" content="website" />
+        <meta property="og:locale" content="pt_BR" />
+        <meta
+            property="og:title"
+            content="Guarda Roupa Virtual | Moda circular"
+        />
+        <meta
+            property="og:description"
+            content="Compre, troque ou alugue roupas de forma consciente."
+        />
+        <meta property="og:url" content="/" />
+        <meta property="og:image" content="/imagens/arara.png" />
+        <link rel="canonical" href="/" />
+        <link rel="manifest" href="/site.webmanifest" />
+        <script type="application/ld+json" id="structured-data">
+            {
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                "name": "Guarda Roupa Virtual",
+                "description": "Marketplace de moda circular para comprar, trocar e alugar roupas.",
+                "url": "/"
+            }
+        </script>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+            rel="stylesheet"
+        />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        />
+        <link rel="stylesheet" href="/style.css" />
+    </head>
 
-<body>
-
-    <!-- ============ TELA: LOGIN ============ -->
-    <section id="screen-login" class="screen auth-screen active">
-        <div class="auth-card">
-            <div class="auth-logo">
-                <img class="brand-logo brand-logo-auth" src="/imagens/cabide.png" alt="Logo Guarda Roupa Virtual" />
-                <h1>Guarda Roupa <span>Virtual</span></h1>
-                <p>Compre, troque ou alugue de forma sustentável.</p>
-            </div>
-            <form id="form-login" novalidate>
-                <div class="input-group">
-                    <label for="login-email">E-mail</label>
-                    <input type="email" id="login-email" autocomplete="email" placeholder="seu@email.com" required />
-                </div>
-                <div class="input-group">
-                    <label for="login-senha">Senha</label>
-                    <input type="password" id="login-senha" autocomplete="current-password" placeholder="••••••••"
-                        required />
-                </div>
-                <div id="login-error" class="form-message error hidden"></div>
-                <a class="link-small" href="#" data-screen="screen-recuperar">Esqueci minha senha</a>
-                <button type="submit" class="btn btn-primary btn-full">Entrar</button>
-            </form>
-            <p class="auth-switch">Não tem conta? <a href="#" data-screen="screen-cadastro">Cadastre-se</a></p>
-            <button class="btn btn-ghost btn-full" type="button" data-demo-login="true">
-                <i class="fa-solid fa-bolt"></i> Entrar como visitante
-            </button>
-        </div>
-    </section>
-
-    <!-- ============ TELA: CADASTRO ============ -->
-    <section id="screen-cadastro" class="screen auth-screen">
-        <div class="auth-card">
-            <div class="auth-logo">
-                <img class="brand-logo brand-logo-auth" src="/imagens/cabide.png" alt="Logo Guarda Roupa Virtual" />
-                <h1>Criar <span>conta</span></h1>
-                <p>Junte-se à moda consciente 🌱</p>
-            </div>
-            <form id="form-cadastro">
-                <div class="input-group"><label for="cad-nome">Nome completo *</label><input type="text" id="cad-nome"
-                        required />
-                </div>
-                <div class="input-group"><label for="cad-email">E-mail *</label><input type="email" id="cad-email"
-                        autocomplete="email" required /></div>
-                <div class="input-row">
-                    <div class="input-group"><label for="cad-senha">Senha *</label><input type="password" id="cad-senha"
-                            minlength="8" autocomplete="new-password" required /></div>
-                    <div class="input-group"><label for="cad-confirma">Confirmar *</label><input type="password"
-                            id="cad-confirma" minlength="8" autocomplete="new-password" required /></div>
-                </div>
-                <div class="input-row">
-                    <div class="input-group"><label>Telefone</label><input type="tel" id="cad-telefone"
-                            placeholder="(43) 99999-9999" /></div>
-                    <div class="input-group"><label>Cidade/UF *</label><input type="text" id="cad-cidade"
-                            placeholder="Londrina, PR" required /></div>
-                </div>
-                <button type="submit" class="btn btn-primary btn-full">Cadastrar</button>
-            </form>
-            <p class="auth-switch">Já tem conta? <a href="#" data-screen="screen-login">Entrar</a></p>
-        </div>
-    </section>
-
-    <!-- ============ TELA: RECUPERAR SENHA ============ -->
-    <section id="screen-recuperar" class="screen auth-screen">
-        <div class="auth-card">
-            <div class="auth-logo">
-                <h1>Recuperar <span>senha</span></h1>
-                <p>Enviaremos um link para seu e-mail.</p>
-            </div>
-            <form id="form-recuperar">
-                <div class="input-group"><label for="recover-email">E-mail</label><input id="recover-email" type="email"
-                        required /></div>
-                <button type="submit" class="btn btn-primary btn-full">Enviar link</button>
-            </form>
-            <p class="auth-switch"><a href="#" data-screen="screen-login">← Voltar ao login</a></p>
-        </div>
-    </section>
-
-    <!-- ============ APP (após login) ============ -->
-    <div id="app" class="hidden">
-
-        <!-- HEADER -->
-        <header class="app-header">
-            <div class="header-left">
-                <button class="icon-btn" id="btn-menu" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
-                <button class="icon-btn back-btn hidden" id="btn-back" aria-label="Voltar para a tela anterior">
-                    <i class="fa-solid fa-arrow-left"></i>
-                </button>
-                <span class="greeting">Olá, <b id="user-firstname">Visitante</b>!</span>
-            </div>
-            <button class="app-header-brand hidden" id="app-header-brand" type="button" data-screen="screen-home"
-                aria-label="Voltar para a tela inicial">Guarda Roupa <span>Virtual</span></button>
-            <div class="header-right">
-                <button class="icon-btn badge-btn" aria-label="Abrir favoritos" type="button"
-                    data-screen="screen-favoritos">
-                    <i class="fa-regular fa-heart"></i><span class="badge hidden" id="favorite-count">0</span>
-                </button>
-                <button class="icon-btn badge-btn" aria-label="Abrir carrinho" type="button"
-                    data-screen="screen-carrinho">
-                    <i class="fa-solid fa-cart-shopping"></i><span class="badge hidden" id="cart-count">0</span>
-                </button>
-                <button class="icon-btn badge-btn" aria-label="Abrir mensagens" type="button"
-                    data-screen="screen-mensagens">
-                    <i class="fa-regular fa-comments"></i><span class="badge hidden" id="message-count">0</span>
-                </button>
-                <button class="icon-btn badge-btn" id="btn-notify" aria-label="Notificações">
-                    <i class="fa-regular fa-bell"></i><span class="badge hidden" id="notification-count">0</span>
-                </button>
-            </div>
-        </header>
-
-        <!-- ============ TELA: HOME ============ -->
-        <main id="screen-home" class="screen app-screen active">
-            <div class="hero">
-                <div class="hero-text">
-                    <div class="hero-title">
-                        <h1>Guarda Roupa <span>Virtual</span></h1>
-                    </div>
+    <body>
+        <!-- ============ TELA: LOGIN ============ -->
+        <section id="screen-login" class="screen auth-screen active">
+            <div class="auth-card">
+                <div class="auth-logo">
+                    <img
+                        class="brand-logo brand-logo-auth"
+                        src="/imagens/cabide.png"
+                        alt="Logo Guarda Roupa Virtual"
+                    />
+                    <h1>Guarda Roupa <span>Virtual</span></h1>
                     <p>Compre, troque ou alugue de forma sustentável.</p>
                 </div>
-                <img class="hero-illustration" src="/imagens/arara.png" alt="Arara com camisa, blusa e vestido" />
+                <form id="form-login" novalidate>
+                    <div class="input-group">
+                        <label for="login-email">E-mail</label>
+                        <input
+                            type="email"
+                            id="login-email"
+                            autocomplete="email"
+                            placeholder="seu@email.com"
+                            required
+                        />
+                    </div>
+                    <div class="input-group">
+                        <label for="login-senha">Senha</label>
+                        <input
+                            type="password"
+                            id="login-senha"
+                            autocomplete="current-password"
+                            placeholder="••••••••"
+                            required
+                        />
+                    </div>
+                    <div
+                        id="login-error"
+                        class="form-message error hidden"
+                    ></div>
+                    <a
+                        class="link-small"
+                        href="#"
+                        data-screen="screen-recuperar"
+                        >Esqueci minha senha</a
+                    >
+                    <button type="submit" class="btn btn-primary btn-full">
+                        Entrar
+                    </button>
+                </form>
+                <p class="auth-switch">
+                    Não tem conta?
+                    <a href="#" data-screen="screen-cadastro">Cadastre-se</a>
+                </p>
+                <button
+                    class="btn btn-ghost btn-full"
+                    type="button"
+                    data-demo-login="true"
+                >
+                    <i class="fa-solid fa-bolt"></i> Entrar como visitante
+                </button>
             </div>
+        </section>
 
-            <form class="search-bar" id="home-search-form">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="home-search-input" placeholder="O que você está procurando?" />
-            </form>
-
-            <div class="promo-banner">
-                <div>
-                    <h3>Moda consciente faz a diferença!</h3>
-                    <p>Dê um novo destino às roupas e transforme o mundo.</p>
-                    <button class="btn btn-white btn-sm">Saiba mais</button>
+        <!-- ============ TELA: CADASTRO ============ -->
+        <section id="screen-cadastro" class="screen auth-screen">
+            <div class="auth-card">
+                <div class="auth-logo">
+                    <img
+                        class="brand-logo brand-logo-auth"
+                        src="/imagens/cabide.png"
+                        alt="Logo Guarda Roupa Virtual"
+                    />
+                    <h1>Criar <span>conta</span></h1>
+                    <p>Junte-se à moda consciente 🌱</p>
                 </div>
-                <img class="promo-image" src="/imagens/bolsa%20e%20roupa.png" alt="Bolsa e roupas" />
+                <form id="form-cadastro">
+                    <div class="input-group">
+                        <label for="cad-nome">Nome completo *</label
+                        ><input type="text" id="cad-nome" required />
+                    </div>
+                    <div class="input-group">
+                        <label for="cad-email">E-mail *</label
+                        ><input
+                            type="email"
+                            id="cad-email"
+                            autocomplete="email"
+                            required
+                        />
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="cad-senha">Senha *</label
+                            ><input
+                                type="password"
+                                id="cad-senha"
+                                minlength="8"
+                                autocomplete="new-password"
+                                required
+                            />
+                        </div>
+                        <div class="input-group">
+                            <label for="cad-confirma">Confirmar *</label
+                            ><input
+                                type="password"
+                                id="cad-confirma"
+                                minlength="8"
+                                autocomplete="new-password"
+                                required
+                            />
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Telefone</label
+                            ><input
+                                type="tel"
+                                id="cad-telefone"
+                                placeholder="(43) 99999-9999"
+                            />
+                        </div>
+                        <div class="input-group">
+                            <label>Cidade/UF *</label
+                            ><input
+                                type="text"
+                                id="cad-cidade"
+                                placeholder="Londrina, PR"
+                                required
+                            />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">
+                        Cadastrar
+                    </button>
+                </form>
+                <p class="auth-switch">
+                    Já tem conta?
+                    <a href="#" data-screen="screen-login">Entrar</a>
+                </p>
             </div>
+        </section>
 
-            <div class="section-header">
-                <h2>Categorias</h2>
-                <a class="link" href="#" data-screen="screen-catalogo">Ver todas</a>
-            </div>
-            <div class="categories" id="categories-list"></div>
-
-            <div class="section-header">
-                <h2>Destaques</h2>
-                <a class="link" href="#" data-screen="screen-catalogo">Ver todas</a>
-            </div>
-            <div class="products-grid" id="home-products"></div>
-
-            <div class="section-header">
-                <h2>Mais recentes</h2>
-            </div>
-            <div class="products-grid" id="home-recent"></div>
-
-            <section class="impact-summary" id="impact-summary" aria-label="Impacto da comunidade"></section>
-
-            <div class="section-header">
-                <h2>O que dizem sobre nós</h2>
-            </div>
-            <div class="testimonials" id="testimonials"></div>
-
-            <footer class="app-footer">
-                <h3>Guarda Roupa <span>Virtual</span></h3>
-                <p>Moda circular, consciente e acessível.</p>
-                <div class="footer-links">
-                    <a href="#" data-info="Sobre"
-                        data-info-text="O Guarda Roupa Virtual conecta pessoas para comprar, vender, trocar e alugar roupas de forma consciente.">Sobre</a>
-                    <a href="#" data-info="Termos"
-                        data-info-text="Use a plataforma com respeito, publique informações verdadeiras e combine negociações com responsabilidade. Ao utilizar o aplicativo, você concorda com estas condições.">Termos</a>
-                    <a href="#" data-info="Privacidade"
-                        data-info-text="Seus dados são usados para manter sua conta, facilitar suas compras e melhorar sua experiência. Não compartilhamos suas informações pessoais sem necessidade ou autorização.">Privacidade</a>
-                    <a href="#" data-screen="screen-suporte">Suporte</a>
+        <!-- ============ TELA: RECUPERAR SENHA ============ -->
+        <section id="screen-recuperar" class="screen auth-screen">
+            <div class="auth-card">
+                <div class="auth-logo">
+                    <h1>Recuperar <span>senha</span></h1>
+                    <p>
+                        Enviaremos um link para o e-mail cadastrado, se a
+                        recuperação estiver configurada.
+                    </p>
                 </div>
-                <p class="copy">© 2026 Fast Fashion</p>
-            </footer>
-        </main>
-
-        <!-- ============ TELA: CATÁLOGO ============ -->
-        <main id="screen-catalogo" class="screen app-screen">
-            <div class="page-title-row">
-                <h1 class="page-title">Catálogo</h1>
-                <button class="btn btn-outline btn-sm" type="button" data-action="toggle-filters"><i
-                        class="fa-solid fa-sliders"></i>
-                    Filtros</button>
+                <form id="form-recuperar">
+                    <div class="input-group">
+                        <label for="recover-email">E-mail</label
+                        ><input id="recover-email" type="email" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">
+                        Enviar link
+                    </button>
+                </form>
+                <p class="auth-switch">
+                    <a href="#" data-screen="screen-login">← Voltar ao login</a>
+                </p>
             </div>
+        </section>
 
-            <div class="search-bar">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="search-input" placeholder="Buscar peças..." />
-            </div>
-
-            <div id="filters-panel" class="filters-panel hidden">
-                <div class="filter-row">
-                    <select id="f-categoria">
-                        <option value="">Categoria</option>
-                        <option>Camisetas</option>
-                        <option>Calças</option>
-                        <option>Casacos</option>
-                        <option>Calçados</option>
-                        <option>Vestidos</option>
-                        <option>Outros</option>
-                    </select>
-                    <select id="f-tamanho">
-                        <option value="">Tamanho</option>
-                        <option>P</option>
-                        <option>M</option>
-                        <option>G</option>
-                        <option>GG</option>
-                        <option>38</option>
-                        <option>40</option>
-                        <option>42</option>
-                    </select>
-                    <select id="f-modalidade">
-                        <option value="">Modalidade</option>
-                        <option value="venda">Comprar</option>
-                        <option value="aluguel">Alugar</option>
-                        <option value="troca">Trocar</option>
-                    </select>
-                    <select id="f-estado">
-                        <option value="">Estado</option>
-                        <option>Novo</option>
-                        <option>Excelente</option>
-                        <option>Bom</option>
-                        <option>Usado</option>
-                    </select>
-                    <input type="number" id="f-preco-min" min="0" step="0.01" placeholder="Preço min" />
-                    <input type="number" id="f-preco-max" min="0" step="0.01" placeholder="Preço max" />
-                    <input type="search" id="f-local" placeholder="Região" />
-                    <select id="f-ordenar">
-                        <option value="recentes">Mais recentes</option>
-                        <option value="menor">Menor preço</option>
-                        <option value="maior">Maior preço</option>
-                        <option value="populares">Mais populares</option>
-                        <option value="avaliados">Melhor avaliados</option>
-                    </select>
+        <!-- ============ TELA: NOVA SENHA ============ -->
+        <section id="screen-reset" class="screen auth-screen">
+            <div class="auth-card">
+                <div class="auth-logo">
+                    <h1>Criar <span>nova senha</span></h1>
+                    <p>Escolha uma senha com pelo menos 8 caracteres.</p>
                 </div>
-                <button class="btn btn-ghost btn-sm" type="button" data-action="clear-filters">Limpar filtros</button>
+                <form id="form-reset">
+                    <div class="input-group">
+                        <label for="reset-password">Nova senha</label>
+                        <input
+                            id="reset-password"
+                            type="password"
+                            minlength="8"
+                            maxlength="128"
+                            autocomplete="new-password"
+                            required
+                        />
+                    </div>
+                    <div class="input-group">
+                        <label for="reset-password-confirm"
+                            >Confirme a nova senha</label
+                        >
+                        <input
+                            id="reset-password-confirm"
+                            type="password"
+                            minlength="8"
+                            maxlength="128"
+                            autocomplete="new-password"
+                            required
+                        />
+                    </div>
+                    <div
+                        id="reset-error"
+                        class="form-message error hidden"
+                    ></div>
+                    <button type="submit" class="btn btn-primary btn-full">
+                        Salvar nova senha
+                    </button>
+                </form>
+                <p class="auth-switch">
+                    <a href="#" data-screen="screen-login">Voltar ao login</a>
+                </p>
             </div>
+        </section>
 
-            <p class="results-count" id="results-count"></p>
-            <section class="saved-searches" aria-labelledby="saved-searches-title">
+        <!-- ============ APP (após login) ============ -->
+        <div id="app" class="hidden">
+            <!-- HEADER -->
+            <header class="app-header">
+                <div class="header-left">
+                    <button
+                        class="icon-btn"
+                        id="btn-menu"
+                        aria-label="Abrir menu"
+                    >
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <button
+                        class="icon-btn back-btn hidden"
+                        id="btn-back"
+                        aria-label="Voltar para a tela anterior"
+                    >
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <span class="greeting"
+                        >Olá, <b id="user-firstname">Visitante</b>!</span
+                    >
+                </div>
+                <button
+                    class="app-header-brand hidden"
+                    id="app-header-brand"
+                    type="button"
+                    data-screen="screen-home"
+                    aria-label="Voltar para a tela inicial"
+                >
+                    Guarda Roupa <span>Virtual</span>
+                </button>
+                <div class="header-right">
+                    <button
+                        class="icon-btn badge-btn"
+                        aria-label="Abrir favoritos"
+                        type="button"
+                        data-screen="screen-favoritos"
+                    >
+                        <i class="fa-regular fa-heart"></i
+                        ><span class="badge hidden" id="favorite-count">0</span>
+                    </button>
+                    <button
+                        class="icon-btn badge-btn"
+                        aria-label="Abrir carrinho"
+                        type="button"
+                        data-screen="screen-carrinho"
+                    >
+                        <i class="fa-solid fa-cart-shopping"></i
+                        ><span class="badge hidden" id="cart-count">0</span>
+                    </button>
+                    <button
+                        class="icon-btn badge-btn"
+                        aria-label="Abrir mensagens"
+                        type="button"
+                        data-screen="screen-mensagens"
+                    >
+                        <i class="fa-regular fa-comments"></i
+                        ><span class="badge hidden" id="message-count">0</span>
+                    </button>
+                    <button
+                        class="icon-btn badge-btn"
+                        id="btn-notify"
+                        aria-label="Notificações"
+                    >
+                        <i class="fa-regular fa-bell"></i
+                        ><span class="badge hidden" id="notification-count"
+                            >0</span
+                        >
+                    </button>
+                </div>
+            </header>
+
+            <!-- ============ TELA: HOME ============ -->
+            <main id="screen-home" class="screen app-screen active">
+                <div class="hero">
+                    <div class="hero-text">
+                        <div class="hero-title">
+                            <h1>Guarda Roupa <span>Virtual</span></h1>
+                        </div>
+                        <p>Compre, troque ou alugue de forma sustentável.</p>
+                    </div>
+                    <img
+                        class="hero-illustration"
+                        src="/imagens/arara.png"
+                        alt="Arara com camisa, blusa e vestido"
+                    />
+                </div>
+
+                <form class="search-bar" id="home-search-form">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input
+                        type="text"
+                        id="home-search-input"
+                        placeholder="O que você está procurando?"
+                    />
+                </form>
+
+                <div class="promo-banner">
+                    <div>
+                        <h3>Moda consciente faz a diferença!</h3>
+                        <p>
+                            Dê um novo destino às roupas e transforme o mundo.
+                        </p>
+                        <button class="btn btn-white btn-sm">Saiba mais</button>
+                    </div>
+                    <img
+                        class="promo-image"
+                        src="/imagens/bolsa%20e%20roupa.png"
+                        alt="Bolsa e roupas"
+                    />
+                </div>
+
                 <div class="section-header">
-                    <h2 id="saved-searches-title">Buscas salvas</h2>
-                    <button class="btn btn-outline btn-sm" data-action="save-search"><i class="fa-regular fa-bell"></i>
-                        Salvar filtros atuais</button>
+                    <h2>Categorias</h2>
+                    <a class="link" href="#" data-screen="screen-catalogo"
+                        >Ver todas</a
+                    >
                 </div>
-                <div id="saved-searches-list"></div>
-            </section>
-            <div class="products-grid" id="catalog-products"></div>
-        </main>
+                <div class="categories" id="categories-list"></div>
 
-        <!-- ============ TELA: DETALHES ============ -->
-        <main id="screen-detalhes" class="screen app-screen">
-            <div id="detalhes-content"></div>
-        </main>
+                <div class="section-header">
+                    <h2>Destaques</h2>
+                    <a class="link" href="#" data-screen="screen-catalogo"
+                        >Ver todas</a
+                    >
+                </div>
+                <div class="products-grid" id="home-products"></div>
 
-        <!-- ============ TELA: PERFIL DO VENDEDOR ============ -->
-        <main id="screen-vendedor" class="screen app-screen">
-            <div id="vendedor-content"></div>
-        </main>
+                <div class="section-header">
+                    <h2>Mais recentes</h2>
+                </div>
+                <div class="products-grid" id="home-recent"></div>
 
-        <!-- ============ TELA: CHAT ============ -->
-        <main id="screen-chat" class="screen app-screen">
-            <div id="chat-content"></div>
-        </main>
+                <section
+                    class="impact-summary"
+                    id="impact-summary"
+                    aria-label="Impacto da comunidade"
+                ></section>
 
-        <!-- ============ TELA: MENSAGENS ============ -->
-        <main id="screen-mensagens" class="screen app-screen">
-            <h1 class="page-title">Mensagens</h1>
-            <p class="page-intro">Conversas com os vendedores.</p>
-            <div id="messages-list"></div>
-        </main>
+                <div class="section-header">
+                    <h2>O que dizem sobre nós</h2>
+                </div>
+                <div class="testimonials" id="testimonials"></div>
 
-        <!-- ============ TELA: CARRINHO ============ -->
-        <main id="screen-carrinho" class="screen app-screen">
-            <h1 class="page-title">Carrinho</h1>
-            <div id="cart-content"></div>
-        </main>
-
-        <!-- ============ TELA: CHECKOUT ============ -->
-        <main id="screen-dados" class="screen app-screen">
-            <h1 class="page-title">Editar perfil</h1>
-            <p class="page-intro">Atualize o nome e a cidade da sua conta.</p>
-            <form id="form-dados" class="card">
-                <div class="input-group"><label for="dados-nome">Nome completo *</label><input type="text"
-                        id="dados-nome" required /></div>
-                <div class="input-group"><label for="dados-cidade">Cidade</label><input type="text" id="dados-cidade"
-                        placeholder="Londrina, PR" required /></div>
-                <button class="btn btn-primary btn-full" type="submit">Salvar perfil</button>
-            </form>
-        </main>
-
-        <main id="screen-checkout" class="screen app-screen">
-            <h1 class="page-title">Checkout</h1>
-            <div id="checkout-content"></div>
-        </main>
-
-        <!-- ============ TELA: PUBLICAR ITEM ============ -->
-        <main id="screen-publicar" class="screen app-screen">
-            <h1 class="page-title center">Publicar item</h1>
-            <div class="steps"><span class="step active">1 Informações</span><span class="step">2 Detalhes</span><span
-                    class="step">3 Revisão</span></div>
-
-            <form id="form-publicar" class="publish-form">
-                <div class="card">
-                    <label class="card-label" for="pub-fotos">Fotos do item *</label>
-                    <div class="photo-upload">
-                        <i class="fa-solid fa-camera"></i>
-                        <p>Mostre a peça com luz natural, frente e costas</p><small>Até 8 fotos · JPG, PNG ou WebP ·
-                            máximo 5 MB cada</small>
-                        <input type="file" id="pub-fotos" accept="image/*" multiple />
-                        <div id="photo-preview" class="photo-preview"></div>
-                        <div id="photo-quality" class="photo-quality" aria-live="polite">
-                            <strong>Guia de fotos</strong>
-                            <ul>
-                                <li>Use um fundo simples e boa iluminação.</li>
-                                <li>Inclua frente, costas e etiqueta/tamanho.</li>
-                                <li>Mostre de perto qualquer detalhe ou desgaste.</li>
-                            </ul>
-                        </div>
+                <footer class="app-footer">
+                    <h3>Guarda Roupa <span>Virtual</span></h3>
+                    <p>Moda circular, consciente e acessível.</p>
+                    <div class="footer-links">
+                        <a
+                            href="#"
+                            data-info="Sobre"
+                            data-info-text="O Guarda Roupa Virtual conecta pessoas para comprar, vender, trocar e alugar roupas de forma consciente."
+                            >Sobre</a
+                        >
+                        <a
+                            href="#"
+                            data-info="Termos"
+                            data-info-text="Use a plataforma com respeito, publique informações verdadeiras e combine negociações com responsabilidade. Ao utilizar o aplicativo, você concorda com estas condições."
+                            >Termos</a
+                        >
+                        <a
+                            href="#"
+                            data-info="Privacidade"
+                            data-info-text="Seus dados são usados para manter sua conta, facilitar suas compras e melhorar sua experiência. Não compartilhamos suas informações pessoais sem necessidade ou autorização."
+                            >Privacidade</a
+                        >
+                        <a href="#" data-screen="screen-suporte">Suporte</a>
                     </div>
+                    <p class="copy">© 2026 Fast Fashion</p>
+                </footer>
+            </main>
+
+            <!-- ============ TELA: CATÁLOGO ============ -->
+            <main id="screen-catalogo" class="screen app-screen">
+                <div class="page-title-row">
+                    <h1 class="page-title">Catálogo</h1>
+                    <button
+                        class="btn btn-outline btn-sm"
+                        type="button"
+                        data-action="toggle-filters"
+                    >
+                        <i class="fa-solid fa-sliders"></i> Filtros
+                    </button>
                 </div>
 
-                <div class="card">
-                    <div class="input-group"><label>Nome do item *</label><input type="text" id="pub-nome"
-                            maxlength="60" required /></div>
-                    <div class="input-row">
-                        <div class="input-group"><label>Categoria *</label>
-                            <select id="pub-categoria" required>
-                                <option>Camisetas</option>
-                                <option>Calças</option>
-                                <option>Casacos</option>
-                                <option>Calçados</option>
-                                <option>Vestidos</option>
-                                <option>Outros</option>
-                            </select>
-                        </div>
-                        <div class="input-group"><label>Marca</label><input type="text" id="pub-marca" /></div>
+                <div class="search-bar">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input
+                        type="text"
+                        id="search-input"
+                        placeholder="Buscar peças..."
+                    />
+                </div>
+
+                <div id="filters-panel" class="filters-panel hidden">
+                    <div class="filter-row">
+                        <select id="f-categoria">
+                            <option value="">Categoria</option>
+                            <option>Camisetas</option>
+                            <option>Calças</option>
+                            <option>Casacos</option>
+                            <option>Calçados</option>
+                            <option>Vestidos</option>
+                            <option>Outros</option>
+                        </select>
+                        <select id="f-tamanho">
+                            <option value="">Tamanho</option>
+                            <option>P</option>
+                            <option>M</option>
+                            <option>G</option>
+                            <option>GG</option>
+                            <option>38</option>
+                            <option>40</option>
+                            <option>42</option>
+                        </select>
+                        <select id="f-modalidade">
+                            <option value="">Modalidade</option>
+                            <option value="venda">Comprar</option>
+                            <option value="aluguel">Alugar</option>
+                            <option value="troca">Trocar</option>
+                        </select>
+                        <select id="f-estado">
+                            <option value="">Estado</option>
+                            <option>Novo</option>
+                            <option>Excelente</option>
+                            <option>Bom</option>
+                            <option>Usado</option>
+                        </select>
+                        <input
+                            type="number"
+                            id="f-preco-min"
+                            min="0"
+                            step="0.01"
+                            placeholder="Preço min"
+                        />
+                        <input
+                            type="number"
+                            id="f-preco-max"
+                            min="0"
+                            step="0.01"
+                            placeholder="Preço max"
+                        />
+                        <input
+                            type="search"
+                            id="f-local"
+                            placeholder="Região"
+                        />
+                        <select id="f-ordenar">
+                            <option value="recentes">Mais recentes</option>
+                            <option value="menor">Menor preço</option>
+                            <option value="maior">Maior preço</option>
+                            <option value="populares">Mais populares</option>
+                            <option value="avaliados">Melhor avaliados</option>
+                        </select>
                     </div>
-                    <div class="input-row">
-                        <div class="input-group"><label>Tamanho *</label>
-                            <select id="pub-tamanho">
-                                <option>P</option>
-                                <option>M</option>
-                                <option selected>G</option>
-                                <option>GG</option>
-                            </select>
-                        </div>
-                        <div class="input-group"><label>Cor *</label><input type="text" id="pub-cor" value="Preto" />
-                        </div>
-                        <div class="input-group"><label>Condição *</label>
-                            <select id="pub-condicao">
-                                <option>Novo</option>
-                                <option selected>Excelente</option>
-                                <option>Bom</option>
-                                <option>Usado</option>
-                            </select>
+                    <button
+                        class="btn btn-ghost btn-sm"
+                        type="button"
+                        data-action="clear-filters"
+                    >
+                        Limpar filtros
+                    </button>
+                </div>
+
+                <p class="results-count" id="results-count"></p>
+                <section
+                    class="saved-searches"
+                    aria-labelledby="saved-searches-title"
+                >
+                    <div class="section-header">
+                        <h2 id="saved-searches-title">Buscas salvas</h2>
+                        <button
+                            class="btn btn-outline btn-sm"
+                            data-action="save-search"
+                        >
+                            <i class="fa-regular fa-bell"></i> Salvar filtros
+                            atuais
+                        </button>
+                    </div>
+                    <div id="saved-searches-list"></div>
+                </section>
+                <div class="products-grid" id="catalog-products"></div>
+            </main>
+
+            <!-- ============ TELA: DETALHES ============ -->
+            <main id="screen-detalhes" class="screen app-screen">
+                <div id="detalhes-content"></div>
+            </main>
+
+            <!-- ============ TELA: PERFIL DO VENDEDOR ============ -->
+            <main id="screen-vendedor" class="screen app-screen">
+                <div id="vendedor-content"></div>
+            </main>
+
+            <!-- ============ TELA: CHAT ============ -->
+            <main id="screen-chat" class="screen app-screen">
+                <div id="chat-content"></div>
+            </main>
+
+            <!-- ============ TELA: MENSAGENS ============ -->
+            <main id="screen-mensagens" class="screen app-screen">
+                <h1 class="page-title">Mensagens</h1>
+                <p class="page-intro">Conversas com os vendedores.</p>
+                <div id="messages-list"></div>
+            </main>
+
+            <!-- ============ TELA: CARRINHO ============ -->
+            <main id="screen-carrinho" class="screen app-screen">
+                <h1 class="page-title">Carrinho</h1>
+                <div id="cart-content"></div>
+            </main>
+
+            <!-- ============ TELA: CHECKOUT ============ -->
+            <main id="screen-dados" class="screen app-screen">
+                <h1 class="page-title">Editar perfil</h1>
+                <p class="page-intro">
+                    Atualize o nome e a cidade da sua conta.
+                </p>
+                <form id="form-dados" class="card">
+                    <div class="input-group">
+                        <label for="dados-nome">Nome completo *</label
+                        ><input type="text" id="dados-nome" required />
+                    </div>
+                    <div class="input-group">
+                        <label for="dados-cidade">Cidade</label
+                        ><input
+                            type="text"
+                            id="dados-cidade"
+                            placeholder="Londrina, PR"
+                            required
+                        />
+                    </div>
+                    <button class="btn btn-primary btn-full" type="submit">
+                        Salvar perfil
+                    </button>
+                </form>
+            </main>
+
+            <main id="screen-checkout" class="screen app-screen">
+                <h1 class="page-title">Checkout</h1>
+                <div id="checkout-content"></div>
+            </main>
+
+            <!-- ============ TELA: PUBLICAR ITEM ============ -->
+            <main id="screen-publicar" class="screen app-screen">
+                <h1 class="page-title center">Publicar item</h1>
+                <div class="steps">
+                    <span class="step active">1 Informações</span
+                    ><span class="step">2 Detalhes</span
+                    ><span class="step">3 Revisão</span>
+                </div>
+
+                <form id="form-publicar" class="publish-form">
+                    <div class="card">
+                        <label class="card-label" for="pub-fotos"
+                            >Fotos do item *</label
+                        >
+                        <div class="photo-upload">
+                            <i class="fa-solid fa-camera"></i>
+                            <p>
+                                Mostre a peça com luz natural, frente e costas
+                            </p>
+                            <small
+                                >Até 8 fotos · JPG, PNG ou WebP · máximo 5 MB
+                                cada</small
+                            >
+                            <input
+                                type="file"
+                                id="pub-fotos"
+                                accept="image/*"
+                                multiple
+                            />
+                            <div id="photo-preview" class="photo-preview"></div>
+                            <div
+                                id="photo-quality"
+                                class="photo-quality"
+                                aria-live="polite"
+                            >
+                                <strong>Guia de fotos</strong>
+                                <ul>
+                                    <li>
+                                        Use um fundo simples e boa iluminação.
+                                    </li>
+                                    <li>
+                                        Inclua frente, costas e
+                                        etiqueta/tamanho.
+                                    </li>
+                                    <li>
+                                        Mostre de perto qualquer detalhe ou
+                                        desgaste.
+                                    </li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
-                    <fieldset class="measurement-fields">
-                        <legend>Medidas da peça (cm) · opcionais</legend>
+
+                    <div class="card">
+                        <div class="input-group">
+                            <label>Nome do item *</label
+                            ><input
+                                type="text"
+                                id="pub-nome"
+                                maxlength="60"
+                                required
+                            />
+                        </div>
                         <div class="input-row">
-                            <div class="input-group"><label for="pub-busto">Busto</label><input type="number"
-                                    id="pub-busto" min="0" max="250" step="0.5" placeholder="ex.: 92" /></div>
-                            <div class="input-group"><label for="pub-cintura">Cintura</label><input type="number"
-                                    id="pub-cintura" min="0" max="250" step="0.5" placeholder="ex.: 76" /></div>
-                            <div class="input-group"><label for="pub-quadril">Quadril</label><input type="number"
-                                    id="pub-quadril" min="0" max="250" step="0.5" placeholder="ex.: 98" /></div>
-                            <div class="input-group"><label for="pub-comprimento">Comprimento</label><input
-                                    type="number" id="pub-comprimento" min="0" max="250" step="0.5"
-                                    placeholder="ex.: 62" /></div>
+                            <div class="input-group">
+                                <label>Categoria *</label>
+                                <select id="pub-categoria" required>
+                                    <option>Camisetas</option>
+                                    <option>Calças</option>
+                                    <option>Casacos</option>
+                                    <option>Calçados</option>
+                                    <option>Vestidos</option>
+                                    <option>Outros</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Marca</label
+                                ><input type="text" id="pub-marca" />
+                            </div>
                         </div>
-                        <div class="input-group"><label for="pub-caimento">Caimento e ajuste</label><input type="text"
-                                id="pub-caimento" maxlength="120"
-                                placeholder="ex.: modelagem ampla, tecido sem elasticidade" /></div>
-                    </fieldset>
-                    <div class="input-group"><label>Descrição *</label><textarea id="pub-desc" rows="3"
-                            required></textarea></div>
-                </div>
-
-                <div class="card">
-                    <label class="card-label">Modalidade * <small>Escolha uma ou mais opções</small></label>
-                    <div class="modality-options">
-                        <label class="modality-check active"><input type="checkbox" id="pub-venda" checked /> <i
-                                class="fa-solid fa-tag"></i> Venda</label>
-                        <label class="modality-check"><input type="checkbox" id="pub-troca" /> <i
-                                class="fa-solid fa-arrows-rotate"></i> Troca</label>
-                        <label class="modality-check"><input type="checkbox" id="pub-aluguel" /> <i
-                                class="fa-regular fa-calendar"></i> Aluguel</label>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label>Tamanho *</label>
+                                <select id="pub-tamanho">
+                                    <option>P</option>
+                                    <option>M</option>
+                                    <option selected>G</option>
+                                    <option>GG</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Cor *</label
+                                ><input
+                                    type="text"
+                                    id="pub-cor"
+                                    value="Preto"
+                                />
+                            </div>
+                            <div class="input-group">
+                                <label>Condição *</label>
+                                <select id="pub-condicao">
+                                    <option>Novo</option>
+                                    <option selected>Excelente</option>
+                                    <option>Bom</option>
+                                    <option>Usado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <fieldset class="measurement-fields">
+                            <legend>Medidas da peça (cm) · opcionais</legend>
+                            <div class="input-row">
+                                <div class="input-group">
+                                    <label for="pub-busto">Busto</label
+                                    ><input
+                                        type="number"
+                                        id="pub-busto"
+                                        min="0"
+                                        max="250"
+                                        step="0.5"
+                                        placeholder="ex.: 92"
+                                    />
+                                </div>
+                                <div class="input-group">
+                                    <label for="pub-cintura">Cintura</label
+                                    ><input
+                                        type="number"
+                                        id="pub-cintura"
+                                        min="0"
+                                        max="250"
+                                        step="0.5"
+                                        placeholder="ex.: 76"
+                                    />
+                                </div>
+                                <div class="input-group">
+                                    <label for="pub-quadril">Quadril</label
+                                    ><input
+                                        type="number"
+                                        id="pub-quadril"
+                                        min="0"
+                                        max="250"
+                                        step="0.5"
+                                        placeholder="ex.: 98"
+                                    />
+                                </div>
+                                <div class="input-group">
+                                    <label for="pub-comprimento"
+                                        >Comprimento</label
+                                    ><input
+                                        type="number"
+                                        id="pub-comprimento"
+                                        min="0"
+                                        max="250"
+                                        step="0.5"
+                                        placeholder="ex.: 62"
+                                    />
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label for="pub-caimento"
+                                    >Caimento e ajuste</label
+                                ><input
+                                    type="text"
+                                    id="pub-caimento"
+                                    maxlength="120"
+                                    placeholder="ex.: modelagem ampla, tecido sem elasticidade"
+                                />
+                            </div>
+                        </fieldset>
+                        <div class="input-group">
+                            <label>Descrição *</label
+                            ><textarea
+                                id="pub-desc"
+                                rows="3"
+                                required
+                            ></textarea>
+                        </div>
                     </div>
-                    <div class="input-row">
-                        <div class="input-group"><label>Preço (R$)</label><input type="text" id="pub-preco"
-                                inputmode="decimal" placeholder="89,90" /></div>
-                        <div class="input-group"><label>Aluguel (R$/dia)</label><input type="number"
-                                id="pub-aluguel-valor" step="0.01" placeholder="19,90" /></div>
+
+                    <div class="card">
+                        <label class="card-label"
+                            >Modalidade *
+                            <small>Escolha uma ou mais opções</small></label
+                        >
+                        <div class="modality-options">
+                            <label class="modality-check active"
+                                ><input
+                                    type="checkbox"
+                                    id="pub-venda"
+                                    checked
+                                />
+                                <i class="fa-solid fa-tag"></i> Venda</label
+                            >
+                            <label class="modality-check"
+                                ><input type="checkbox" id="pub-troca" />
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                                Troca</label
+                            >
+                            <label class="modality-check"
+                                ><input type="checkbox" id="pub-aluguel" />
+                                <i class="fa-regular fa-calendar"></i>
+                                Aluguel</label
+                            >
+                        </div>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label>Preço (R$)</label
+                                ><input
+                                    type="text"
+                                    id="pub-preco"
+                                    inputmode="decimal"
+                                    placeholder="89,90"
+                                />
+                            </div>
+                            <div class="input-group">
+                                <label>Aluguel (R$/dia)</label
+                                ><input
+                                    type="number"
+                                    id="pub-aluguel-valor"
+                                    step="0.01"
+                                    placeholder="19,90"
+                                />
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label
+                                ><i class="fa-solid fa-location-dot"></i>
+                                Localidade *</label
+                            ><input
+                                type="text"
+                                id="pub-local"
+                                value="Londrina, PR"
+                            />
+                        </div>
                     </div>
-                    <div class="input-group"><label><i class="fa-solid fa-location-dot"></i> Localidade *</label><input
-                            type="text" id="pub-local" value="Londrina, PR" /></div>
+
+                    <div class="eco-banner">
+                        ♻️ Ao publicar, você incentiva o consumo consciente e
+                        reduz o desperdício têxtil!
+                    </div>
+
+                    <div class="btn-row">
+                        <button
+                            type="button"
+                            class="btn btn-outline"
+                            id="save-draft"
+                        >
+                            Salvar rascunho
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            Publicar item
+                        </button>
+                    </div>
+                </form>
+            </main>
+
+            <!-- ============ TELA: FAVORITOS ============ -->
+            <main id="screen-favoritos" class="screen app-screen">
+                <div class="page-title-row">
+                    <h1 class="page-title">Favoritos</h1>
+                    <button
+                        class="btn btn-outline btn-sm"
+                        data-action="share-wishlist"
+                    >
+                        <i class="fa-solid fa-arrow-up-from-bracket"></i>
+                        Compartilhar lista
+                    </button>
                 </div>
+                <div class="products-grid" id="fav-products"></div>
+            </main>
 
-                <div class="eco-banner">♻️ Ao publicar, você incentiva o consumo consciente e reduz o desperdício
-                    têxtil!</div>
+            <!-- ============ TELA: MEUS PRODUTOS ============ -->
+            <main id="screen-meus-produtos" class="screen app-screen">
+                <h1 class="page-title">Meus produtos</h1>
+                <div class="products-grid" id="my-products"></div>
+            </main>
 
-                <div class="btn-row">
-                    <button type="button" class="btn btn-outline" id="save-draft">Salvar rascunho</button>
-                    <button type="submit" class="btn btn-primary">Publicar item</button>
+            <!-- ============ TELA: PEDIDOS ============ -->
+            <main id="screen-pedidos" class="screen app-screen">
+                <h1 class="page-title">Meus pedidos</h1>
+                <div
+                    class="order-filters"
+                    role="group"
+                    aria-label="Filtrar pedidos"
+                >
+                    <button
+                        class="order-filter active"
+                        data-action="filter-orders"
+                        data-filter="todos"
+                        type="button"
+                    >
+                        Todos
+                    </button>
+                    <button
+                        class="order-filter"
+                        data-action="filter-orders"
+                        data-filter="ativos"
+                        type="button"
+                    >
+                        Ativos
+                    </button>
+                    <button
+                        class="order-filter"
+                        data-action="filter-orders"
+                        data-filter="cancelados"
+                        type="button"
+                    >
+                        Cancelados
+                    </button>
                 </div>
-            </form>
-        </main>
+                <div id="orders-list"></div>
+            </main>
 
-        <!-- ============ TELA: FAVORITOS ============ -->
-        <main id="screen-favoritos" class="screen app-screen">
-            <div class="page-title-row">
-                <h1 class="page-title">Favoritos</h1><button class="btn btn-outline btn-sm"
-                    data-action="share-wishlist"><i class="fa-solid fa-arrow-up-from-bracket"></i> Compartilhar
-                    lista</button>
-            </div>
-            <div class="products-grid" id="fav-products"></div>
-        </main>
-
-        <!-- ============ TELA: MEUS PRODUTOS ============ -->
-        <main id="screen-meus-produtos" class="screen app-screen">
-            <h1 class="page-title">Meus produtos</h1>
-            <div class="products-grid" id="my-products"></div>
-        </main>
-
-        <!-- ============ TELA: PEDIDOS ============ -->
-        <main id="screen-pedidos" class="screen app-screen">
-            <h1 class="page-title">Meus pedidos</h1>
-            <div class="order-filters" role="group" aria-label="Filtrar pedidos">
-                <button class="order-filter active" data-action="filter-orders" data-filter="todos"
-                    type="button">Todos</button>
-                <button class="order-filter" data-action="filter-orders" data-filter="ativos"
-                    type="button">Ativos</button>
-                <button class="order-filter" data-action="filter-orders" data-filter="cancelados"
-                    type="button">Cancelados</button>
-            </div>
-            <div id="orders-list"></div>
-        </main>
-
-        <!-- ============ TELA: PERFIL ============ -->
-        <main id="screen-perfil" class="screen app-screen">
-            <div class="profile-header">
-                <div class="avatar" id="profile-avatar">C</div>
-                <label class="profile-photo-control" for="profile-photo">Alterar foto</label>
-                <input type="file" id="profile-photo" accept="image/*" hidden />
-                <h2 id="profile-name">Visitante</h2>
-                <p id="profile-city">Londrina, PR</p>
-                <div class="profile-rating" id="profile-rating">★ 4,9 <span class="seller-status hidden">· Vendedor
-                        confiável</span></div>
-            </div>
-            <div class="profile-menu">
-                <a href="#" data-screen="screen-pedidos"><i class="fa-solid fa-box"></i> Meus pedidos <i
-                        class="fa-solid fa-chevron-right"></i></a>
-                <a href="#" data-screen="screen-favoritos"><i class="fa-regular fa-heart"></i> Favoritos <i
-                        class="fa-solid fa-chevron-right"></i></a>
-                <a href="#" data-screen="screen-meus-produtos"><i class="fa-solid fa-tags"></i> Meus produtos <i
-                        class="fa-solid fa-chevron-right"></i></a>
-                <a href="#" data-screen="screen-suporte"><i class="fa-solid fa-headset"></i> Suporte <i
-                        class="fa-solid fa-chevron-right"></i></a>
-                <a href="#" data-screen="screen-dados"><i class="fa-solid fa-pen"></i> Editar dados pessoais <i
-                        class="fa-solid fa-chevron-right"></i></a>
-                <a href="#" data-screen="screen-tema"><i class="fa-solid fa-palette"></i> Tema <i
-                        class="fa-solid fa-chevron-right"></i></a>
-                <a href="#" data-screen="screen-configuracoes"><i class="fa-solid fa-gear"></i> Configurações <i
-                        class="fa-solid fa-chevron-right"></i></a>
-                <a href="#" data-screen="screen-cupons"><i class="fa-solid fa-ticket"></i> Cupons e ofertas <i
-                        class="fa-solid fa-chevron-right"></i></a>
-                <a href="#" data-action="logout" class="danger"><i class="fa-solid fa-right-from-bracket"></i> Sair da
-                    conta</a>
-            </div>
-        </main>
-
-        <main id="screen-tema" class="screen app-screen">
-            <h1 class="page-title">Tema</h1>
-            <form id="form-tema" class="card">
-                <div class="input-group">
-                    <label for="theme-mode">Escolha o tema</label>
-                    <select id="theme-mode">
-                        <option value="light">Modo claro</option>
-                        <option value="dark">Modo escuro</option>
-                    </select>
+            <!-- ============ TELA: PERFIL ============ -->
+            <main id="screen-perfil" class="screen app-screen">
+                <div class="profile-header">
+                    <div class="avatar" id="profile-avatar">C</div>
+                    <label class="profile-photo-control" for="profile-photo"
+                        >Alterar foto</label
+                    >
+                    <input
+                        type="file"
+                        id="profile-photo"
+                        accept="image/*"
+                        hidden
+                    />
+                    <h2 id="profile-name">Visitante</h2>
+                    <p id="profile-city">Londrina, PR</p>
+                    <div class="profile-rating" id="profile-rating">
+                        ★ 4,9
+                        <span class="seller-status hidden"
+                            >· Vendedor confiável</span
+                        >
+                    </div>
                 </div>
-                <button class="btn btn-primary btn-full" type="submit">Salvar tema</button>
-            </form>
-        </main>
-
-        <main id="screen-cupons" class="screen app-screen">
-            <h1 class="page-title">Cupons e ofertas</h1>
-            <div class="coupon-list">
-                <div class="card coupon-card"><strong>BEMVINDO10</strong><span>10% de desconto na compra</span><button
-                        class="btn btn-outline btn-sm" type="button" data-action="use-coupon"
-                        data-coupon="BEMVINDO10">Usar cupom</button></div>
-                <div class="card coupon-card"><strong>MODACONSCIENTE</strong><span>R$ 15,00 de desconto</span><button
-                        class="btn btn-outline btn-sm" type="button" data-action="use-coupon"
-                        data-coupon="MODACONSCIENTE">Usar cupom</button></div>
-            </div>
-        </main>
-
-        <main id="screen-configuracoes" class="screen app-screen">
-            <h1 class="page-title">Configurações</h1>
-            <form id="form-configuracoes" class="card">
-                <div class="input-group"><label for="setting-language">Idioma</label><select id="setting-language">
-                        <option value="pt-BR">Português (Brasil)</option>
-                        <option value="en-US">English</option>
-                        <option value="es">Español</option>
-                    </select></div>
-                <div class="input-group"><label for="setting-currency">Moeda de compra</label><select
-                        id="setting-currency">
-                        <option value="BRL">Real brasileiro (R$)</option>
-                        <option value="USD">Dólar americano ($)</option>
-                        <option value="EUR">Euro (€)</option>
-                    </select></div>
-                <div class="input-group"><label for="setting-payment">Forma de pagamento preferida</label><select
-                        id="setting-payment">
-                        <option>Pix</option>
-                        <option>Cartão</option>
-                        <option>Boleto</option>
-                    </select></div>
-                <div class="input-group"><label for="setting-theme">Tema do site</label><select id="setting-theme">
-                        <option value="light">Claro</option>
-                        <option value="dark">Escuro</option>
-                    </select></div>
-                <label class="card-check"><input type="checkbox" id="setting-seller" /> Quero ser vendedor</label>
-                <label class="card-check"><input type="checkbox" id="setting-notifications" checked /> Receber
-                    notificações de pedidos</label>
-                <button class="btn btn-primary btn-full" type="submit">Salvar configurações</button>
-            </form>
-        </main>
-
-        <!-- ============ TELA: SUPORTE ============ -->
-        <main id="screen-suporte" class="screen app-screen">
-            <h1 class="page-title">Suporte</h1>
-            <form id="form-suporte" class="card">
-                <div class="input-group"><label for="support-subject">Assunto</label>
-                    <select id="support-subject">
-                        <option>Dúvida sobre pedido</option>
-                        <option>Problema com troca</option>
-                        <option>Pagamento</option>
-                        <option>Outro</option>
-                    </select>
+                <div class="profile-menu">
+                    <a href="#" data-screen="screen-pedidos"
+                        ><i class="fa-solid fa-box"></i> Meus pedidos
+                        <i class="fa-solid fa-chevron-right"></i
+                    ></a>
+                    <a href="#" data-screen="screen-favoritos"
+                        ><i class="fa-regular fa-heart"></i> Favoritos
+                        <i class="fa-solid fa-chevron-right"></i
+                    ></a>
+                    <a href="#" data-screen="screen-meus-produtos"
+                        ><i class="fa-solid fa-tags"></i> Meus produtos
+                        <i class="fa-solid fa-chevron-right"></i
+                    ></a>
+                    <a href="#" data-screen="screen-suporte"
+                        ><i class="fa-solid fa-headset"></i> Suporte
+                        <i class="fa-solid fa-chevron-right"></i
+                    ></a>
+                    <a href="#" data-screen="screen-dados"
+                        ><i class="fa-solid fa-pen"></i> Editar dados pessoais
+                        <i class="fa-solid fa-chevron-right"></i
+                    ></a>
+                    <a href="#" data-screen="screen-tema"
+                        ><i class="fa-solid fa-palette"></i> Tema
+                        <i class="fa-solid fa-chevron-right"></i
+                    ></a>
+                    <a href="#" data-screen="screen-configuracoes"
+                        ><i class="fa-solid fa-gear"></i> Configurações
+                        <i class="fa-solid fa-chevron-right"></i
+                    ></a>
+                    <a href="#" data-screen="screen-cupons"
+                        ><i class="fa-solid fa-ticket"></i> Cupons e ofertas
+                        <i class="fa-solid fa-chevron-right"></i
+                    ></a>
+                    <a href="#" data-action="logout" class="danger"
+                        ><i class="fa-solid fa-right-from-bracket"></i> Sair da
+                        conta</a
+                    >
                 </div>
-                <div class="input-group"><label for="support-message">Mensagem</label><textarea id="support-message"
-                        rows="4" required placeholder="Descreva sua dúvida..."></textarea></div>
-                <button class="btn btn-primary btn-full"><i class="fa-regular fa-paper-plane"></i> Enviar
-                    mensagem</button>
-            </form>
-        </main>
+            </main>
 
-        <!-- BOTTOM NAV -->
-        <nav class="bottom-nav">
-            <a class="nav-item active" data-screen="screen-home" href="#"><i
-                    class="fa-solid fa-house"></i><span>Início</span></a>
-            <a class="nav-item" data-screen="screen-catalogo" href="#"><i
-                    class="fa-solid fa-magnifying-glass"></i><span>Buscar</span></a>
-            <a href="#" class="nav-fab" aria-label="Publicar novo item" data-screen="screen-publicar"><i
-                    class="fa-solid fa-plus"></i></a>
-            <a class="nav-item" data-screen="screen-pedidos" href="#"><i
-                    class="fa-regular fa-envelope"></i><span>Pedidos</span></a>
-            <a class="nav-item" data-screen="screen-perfil" href="#"><i
-                    class="fa-regular fa-user"></i><span>Perfil</span></a>
-        </nav>
-    </div>
+            <main id="screen-tema" class="screen app-screen">
+                <h1 class="page-title">Tema</h1>
+                <form id="form-tema" class="card">
+                    <div class="input-group">
+                        <label for="theme-mode">Escolha o tema</label>
+                        <select id="theme-mode">
+                            <option value="light">Modo claro</option>
+                            <option value="dark">Modo escuro</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary btn-full" type="submit">
+                        Salvar tema
+                    </button>
+                </form>
+            </main>
 
-    <aside id="side-menu" class="side-menu hidden">
-        <div class="side-menu-header">
-            <h3>Menu</h3>
-            <button class="close-panel" aria-label="Fechar menu" type="button" data-action="toggle-menu">×</button>
+            <main id="screen-cupons" class="screen app-screen">
+                <h1 class="page-title">Cupons e ofertas</h1>
+                <div class="coupon-list">
+                    <div class="card coupon-card">
+                        <strong>BEMVINDO10</strong
+                        ><span>10% de desconto na compra</span
+                        ><button
+                            class="btn btn-outline btn-sm"
+                            type="button"
+                            data-action="use-coupon"
+                            data-coupon="BEMVINDO10"
+                        >
+                            Usar cupom
+                        </button>
+                    </div>
+                    <div class="card coupon-card">
+                        <strong>MODACONSCIENTE</strong
+                        ><span>R$ 15,00 de desconto</span
+                        ><button
+                            class="btn btn-outline btn-sm"
+                            type="button"
+                            data-action="use-coupon"
+                            data-coupon="MODACONSCIENTE"
+                        >
+                            Usar cupom
+                        </button>
+                    </div>
+                </div>
+            </main>
+
+            <main id="screen-configuracoes" class="screen app-screen">
+                <h1 class="page-title">Configurações</h1>
+                <form id="form-configuracoes" class="card">
+                    <div class="input-group">
+                        <label for="setting-language">Idioma</label
+                        ><select id="setting-language">
+                            <option value="pt-BR">Português (Brasil)</option>
+                            <option value="en-US">English</option>
+                            <option value="es">Español</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="setting-currency"
+                            >Moeda de compra (cotação não disponível)</label
+                        ><select id="setting-currency">
+                            <option value="BRL">Real brasileiro (R$)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="setting-payment"
+                            >Forma de pagamento preferida</label
+                        ><select id="setting-payment">
+                            <option>Pix</option>
+                            <option>Cartão</option>
+                            <option>Boleto</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="setting-theme">Tema do site</label
+                        ><select id="setting-theme">
+                            <option value="light">Claro</option>
+                            <option value="dark">Escuro</option>
+                        </select>
+                    </div>
+                    <label class="card-check"
+                        ><input type="checkbox" id="setting-seller" /> Quero ser
+                        vendedor</label
+                    >
+                    <label class="card-check"
+                        ><input
+                            type="checkbox"
+                            id="setting-notifications"
+                            checked
+                        />
+                        Receber notificações de pedidos</label
+                    >
+                    <button class="btn btn-primary btn-full" type="submit">
+                        Salvar configurações
+                    </button>
+                </form>
+            </main>
+
+            <!-- ============ TELA: SUPORTE ============ -->
+            <main id="screen-suporte" class="screen app-screen">
+                <h1 class="page-title">Suporte</h1>
+                <form id="form-suporte" class="card">
+                    <div class="input-group">
+                        <label for="support-subject">Assunto</label>
+                        <select id="support-subject">
+                            <option>Dúvida sobre pedido</option>
+                            <option>Problema com troca</option>
+                            <option>Pagamento</option>
+                            <option>Outro</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="support-message">Mensagem</label
+                        ><textarea
+                            id="support-message"
+                            rows="4"
+                            required
+                            placeholder="Descreva sua dúvida..."
+                        ></textarea>
+                    </div>
+                    <button class="btn btn-primary btn-full">
+                        <i class="fa-regular fa-paper-plane"></i> Enviar
+                        mensagem
+                    </button>
+                </form>
+            </main>
+
+            <!-- BOTTOM NAV -->
+            <nav class="bottom-nav">
+                <a class="nav-item active" data-screen="screen-home" href="#"
+                    ><i class="fa-solid fa-house"></i><span>Início</span></a
+                >
+                <a class="nav-item" data-screen="screen-catalogo" href="#"
+                    ><i class="fa-solid fa-magnifying-glass"></i
+                    ><span>Buscar</span></a
+                >
+                <a
+                    href="#"
+                    class="nav-fab"
+                    aria-label="Publicar novo item"
+                    data-screen="screen-publicar"
+                    ><i class="fa-solid fa-plus"></i
+                ></a>
+                <a class="nav-item" data-screen="screen-pedidos" href="#"
+                    ><i class="fa-regular fa-envelope"></i
+                    ><span>Pedidos</span></a
+                >
+                <a class="nav-item" data-screen="screen-perfil" href="#"
+                    ><i class="fa-regular fa-user"></i><span>Perfil</span></a
+                >
+            </nav>
         </div>
-        <nav class="side-menu-nav">
-            <button type="button" data-screen="screen-home" data-close-menu="true">Início</button>
-            <button type="button" data-screen="screen-catalogo" data-close-menu="true">Catálogo</button>
-            <button type="button" data-screen="screen-favoritos" data-close-menu="true">Favoritos</button>
-            <button type="button" data-screen="screen-pedidos" data-close-menu="true">Pedidos</button>
-            <button type="button" data-screen="screen-perfil" data-close-menu="true">Perfil</button>
-            <button type="button" data-screen="screen-suporte" data-close-menu="true">Suporte</button>
-        </nav>
-    </aside>
 
-    <aside id="notification-panel" class="notification-panel hidden">
-        <div class="panel-header">
-            <h3>Notificações</h3>
-            <button class="close-panel" aria-label="Fechar notificações" type="button"
-                data-action="toggle-notifications">×</button>
-        </div>
-        <button class="btn btn-ghost btn-sm notifications-read-all" type="button"
-            data-action="mark-all-notifications-read">
-            Marcar todas como lidas
-        </button>
-        <div id="notifications-list"></div>
-    </aside>
+        <aside id="side-menu" class="side-menu hidden">
+            <div class="side-menu-header">
+                <h3>Menu</h3>
+                <button
+                    class="close-panel"
+                    aria-label="Fechar menu"
+                    type="button"
+                    data-action="toggle-menu"
+                >
+                    ×
+                </button>
+            </div>
+            <nav class="side-menu-nav">
+                <button
+                    type="button"
+                    data-screen="screen-home"
+                    data-close-menu="true"
+                >
+                    Início
+                </button>
+                <button
+                    type="button"
+                    data-screen="screen-catalogo"
+                    data-close-menu="true"
+                >
+                    Catálogo
+                </button>
+                <button
+                    type="button"
+                    data-screen="screen-favoritos"
+                    data-close-menu="true"
+                >
+                    Favoritos
+                </button>
+                <button
+                    type="button"
+                    data-screen="screen-pedidos"
+                    data-close-menu="true"
+                >
+                    Pedidos
+                </button>
+                <button
+                    type="button"
+                    data-screen="screen-perfil"
+                    data-close-menu="true"
+                >
+                    Perfil
+                </button>
+                <button
+                    type="button"
+                    data-screen="screen-suporte"
+                    data-close-menu="true"
+                >
+                    Suporte
+                </button>
+            </nav>
+        </aside>
 
-    <!-- TOAST -->
-    <div id="toast" class="toast"></div>
+        <aside id="notification-panel" class="notification-panel hidden">
+            <div class="panel-header">
+                <h3>Notificações</h3>
+                <button
+                    class="close-panel"
+                    aria-label="Fechar notificações"
+                    type="button"
+                    data-action="toggle-notifications"
+                >
+                    ×
+                </button>
+            </div>
+            <button
+                class="btn btn-ghost btn-sm notifications-read-all"
+                type="button"
+                data-action="mark-all-notifications-read"
+            >
+                Marcar todas como lidas
+            </button>
+            <div id="notifications-list"></div>
+        </aside>
 
-    <dialog id="info-dialog" class="info-dialog">
-        <div class="info-dialog-content">
-            <button class="close-panel" type="button" aria-label="Fechar" data-action="close-info-dialog">×</button>
-            <h2 id="info-dialog-title"></h2>
-            <p id="info-dialog-message"></p>
-            <button class="btn btn-primary btn-full" type="button" data-action="close-info-dialog">Fechar</button>
-        </div>
-    </dialog>
+        <!-- TOAST -->
+        <div id="toast" class="toast"></div>
 
-    <script src="/app.js"></script>
-</body>
+        <dialog id="info-dialog" class="info-dialog">
+            <div class="info-dialog-content">
+                <button
+                    class="close-panel"
+                    type="button"
+                    aria-label="Fechar"
+                    data-action="close-info-dialog"
+                >
+                    ×
+                </button>
+                <h2 id="info-dialog-title"></h2>
+                <p id="info-dialog-message"></p>
+                <button
+                    class="btn btn-primary btn-full"
+                    type="button"
+                    data-action="close-info-dialog"
+                >
+                    Fechar
+                </button>
+            </div>
+        </dialog>
 
+        <script src="/app.js"></script>
+    </body>
 </html>
